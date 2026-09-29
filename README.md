@@ -16,4 +16,4 @@ Lern-App für die Informatik-Klassenarbeit. Läuft ohne Installation: einfach `i
 2. Claude legt `data/woche-XX-thema.js` an und trägt die Datei in `index.html` ein.
 3. Committen/pushen – fertig.
 
-Struktur eines Themas: siehe `data/woche-01-zahlensysteme.js` (das ist nur ein Platzhalter-Beispiel).
+Struktur eines Themas: siehe `data/vererbung.js`. Themen mit `week: 0` erscheinen als „Grundlagen" (Vorwissen).

@@ -11,6 +11,7 @@
   const prog = id => { const d = load(); return d[id] || { known: [], best: null, done: [] }; };
   const setProg = (id, fn) => { const d = load(); d[id] = d[id] || { known: [], best: null, done: [] }; fn(d[id]); save(d); };
 
+  const wk = t => t.week === 0 ? 'Grundlagen' : 'Woche ' + t.week;
   const cardsOf = t => [...(t.glossary || []).map(g => ({ q: g.term, a: g.def })), ...(t.cards || [])];
 
   function pct(t) {
@@ -38,13 +39,13 @@
   function home() {
     document.getElementById('nav').innerHTML = T.length > 1 ? '<a href="#/exam">🎯 Klassenarbeit-Training</a>' : '';
     app.innerHTML = '<h1>Deine Themen</h1><p class="muted">Ein Thema pro Woche – lies die Erklärung, übe mit Karteikarten, teste dich im Quiz und löse das Arbeitsblatt.</p>' +
-      (T.length ? T.map(t => `<a class="card topic" href="#/t/${t.id}/lesson"><div class="week">Woche ${t.week}</div><h2 style="margin:4px 0">${esc(t.title)}</h2><div class="muted">${esc(t.summary || '')}</div><div class="bar"><i style="width:${pct(t)}%"></i></div></a>`).join('') : '<div class="card">Noch keine Themen.</div>');
+      (T.length ? T.map(t => `<a class="card topic" href="#/t/${t.id}/lesson"><div class="week">${wk(t)}</div><h2 style="margin:4px 0">${esc(t.title)}</h2><div class="muted">${esc(t.summary || '')}</div><div class="bar"><i style="width:${pct(t)}%"></i></div></a>`).join('') : '<div class="card">Noch keine Themen.</div>');
   }
 
   function topic(t, tab) {
     document.getElementById('nav').innerHTML = '<a href="#/">← Alle Themen</a>';
     const tabs = [['lesson', '📖 Erklärung'], ['cards', '🗂 Karteikarten'], ['quiz', '❓ Quiz'], ['exercises', '📝 Arbeitsblatt']];
-    app.innerHTML = `<div class="week">Woche ${t.week}</div><h1 style="margin:2px 0">${esc(t.title)}</h1>
+    app.innerHTML = `<div class="week">${wk(t)}</div><h1 style="margin:2px 0">${esc(t.title)}</h1>
       <div class="tabs">${tabs.map(([k, l]) => `<a href="#/t/${t.id}/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</div><div id="body"></div>`;
     const body = document.getElementById('body');
     ({ lesson, cards, quiz, exercises }[tab] || lesson)(t, body);
@@ -124,7 +125,7 @@
   function exam() {
     document.getElementById('nav').innerHTML = '<a href="#/">← Alle Themen</a>';
     app.innerHTML = `<h1>🎯 Klassenarbeit-Training</h1><p class="muted">Wähle die Themen, die drankommen:</p>
-      <div class="card">${T.map(t => `<label style="display:block"><input type="checkbox" class="sel" value="${t.id}" checked> Woche ${t.week}: ${esc(t.title)}</label>`).join('')}</div>
+      <div class="card">${T.map(t => `<label style="display:block"><input type="checkbox" class="sel" value="${t.id}" checked> ${wk(t)}: ${esc(t.title)}</label>`).join('')}</div>
       <button id="go">Start</button><div id="qz"></div>`;
     document.getElementById('go').onclick = () => {
       const ids = [...document.querySelectorAll('.sel:checked')].map(x => x.value);

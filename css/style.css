@@ -35,3 +35,8 @@ td,th{border:1px solid var(--line);padding:6px 12px}
 details{margin:10px 0}summary{cursor:pointer;color:var(--accent);font-weight:600}
 textarea{width:100%;min-height:80px;font:inherit;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.uml{display:inline-block;vertical-align:top;border:2px solid var(--text);border-radius:2px;min-width:170px;margin:6px;font-size:.9rem;background:var(--card)}
+.uml div{text-align:left;padding:4px 10px;border-top:1px solid var(--text)}.uml div:first-child{border-top:0;text-align:center;font-weight:700}
+.uml.obj div:first-child{text-decoration:underline}
+.diag{text-align:center;overflow:auto;padding:6px 0}.arrow{font-size:1.6rem;line-height:1;margin:2px 0}
+.tag{display:inline-block;font-size:.75rem;padding:1px 8px;border-radius:99px;background:rgba(79,70,229,.15);color:var(--accent);margin-left:6px}

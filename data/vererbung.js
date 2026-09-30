@@ -1,4 +1,4 @@
-// Quelle: Folien "PR Vererbung" + "AB Vererbung" (Ch. Pothmann, cpothmann.de, CC BY-NC-SA 4.0). Abschnitte mit "Zusatz" hat Claude ergänzt.
+// Quelle: Folien "PR Vererbung" + "AB Vererbung" (Ch. Pothmann, cpothmann.de, CC BY-NC-SA 4.0). Java-Umsetzung: siehe Thema "Vererbung im Quellcode".
 (function () {
 const uml = (name, attrs, meths, obj) => `<div class="uml${obj ? ' obj' : ''}"><div>${name}</div><div>${attrs.join('<br>') || '&nbsp;'}</div>${meths ? `<div>${meths.join('<br>') || '&nbsp;'}</div>` : ''}</div>`;
 const up = '<div class="arrow">△</div>';
@@ -29,25 +29,7 @@ window.TOPICS.push({
     { title: 'Spielregeln', html: `<ul><li>Eine Oberklasse kann <b>beliebig viele Unterklassen</b> haben.</li>
       <li>Eine Unterklasse kann selbst wieder <b>weitere Unterklassen</b> haben (Vererbungshierarchie, mehrstufig).</li>
       <li>Eine Klasse darf nur <b>eine einzige Oberklasse</b> haben → <b>Mehrfachvererbung ist nicht erlaubt</b>.</li></ul>
-      <div class="diag">${uml('Charakter', [], null)}${up}${uml('Krieger', [], null)}${uml('Zauberer', [], null)}<br>${up}<br>${uml('Ritter', [], null)}</div>` },
-    { title: 'Zusatz: So sieht das in Java aus', html: `<p><i>Nicht in den Folien, aber der nächste logische Schritt („OOP mit Java").</i></p>
-      <pre><code>public class Charakter {
-    protected String name;
-    protected int lebensenergie;
-    public Charakter(String pName) { name = pName; lebensenergie = 100; }
-    public void verwundet(int pl) { lebensenergie = lebensenergie - pl; }
-}
-
-public class Krieger extends Charakter {   // "extends" = erbt von
-    private int kraft;
-    public Krieger(String pName, int pKraft) {
-        super(pName);                       // Konstruktor der Oberklasse aufrufen
-        kraft = pKraft;
-    }
-    public void angreifen() { ... }
-}</code></pre>
-      <ul><li><code>extends</code> schreibt die Vererbung.</li><li><code>super(...)</code> ruft den Konstruktor der Oberklasse auf (muss die erste Zeile sein).</li>
-      <li><code>private</code> Attribute der Oberklasse sind in der Unterklasse nicht direkt sichtbar → <code>protected</code> oder Getter/Setter nutzen.</li></ul>` }
+      <div class="diag">${uml('Charakter', [], null)}${up}${uml('Krieger', [], null)}${uml('Zauberer', [], null)}<br>${up}<br>${uml('Ritter', [], null)}</div>` }
   ],
   keyPoints: ['Oberklasse = Gemeinsames; Unterklassen erben + haben Zusätzliches', 'Vererbung = ist-Beziehung = hohles Dreieck; Assoziation = hat-Beziehung = offener Pfeil', 'Objekte von Unterklassen haben Attribute von Ober- UND Unterklasse', 'Beliebig viele Unterklassen, aber nur EINE Oberklasse (keine Mehrfachvererbung)', 'Synonyme: Super-/Basis-/Elternklasse ↔ Sub-/abgeleitete/Kindklasse'],
   glossary: [
@@ -59,8 +41,7 @@ public class Krieger extends Charakter {   // "extends" = erbt von
     { term: 'Generalisierung', def: 'Gemeinsamkeiten mehrerer Klassen in eine Oberklasse zusammenfassen.' },
     { term: 'Spezialisierung', def: 'Eine Klasse durch Unterklassen mit zusätzlichen Eigenschaften genauer ausformen.' },
     { term: 'Mehrfachvererbung', def: 'Eine Klasse hat mehrere Oberklassen – in Java nicht erlaubt.' },
-    { term: 'extends', def: 'Java-Schlüsselwort für Vererbung: class Krieger extends Charakter.' },
-    { term: 'super(...)', def: 'Aufruf des Konstruktors der Oberklasse aus der Unterklasse.' }
+    { term: 'extends', def: 'Java-Schlüsselwort für Vererbung: class Krieger extends Charakter.' }
   ],
   cards: [
     { q: 'Wie viele Oberklassen darf eine Klasse haben?', a: 'Genau eine (höchstens eine). Mehrfachvererbung ist nicht erlaubt.' },
@@ -76,7 +57,7 @@ public class Krieger extends Charakter {   // "extends" = erbt von
     { q: 'Welche Aussage ist falsch?', options: ['Eine Oberklasse kann mehrere Unterklassen haben', 'Eine Unterklasse kann selbst Oberklasse sein', 'Eine Klasse kann zwei Oberklassen haben', 'Unterklassen erben Attribute und Methoden'], answer: 2, explain: 'Mehrfachvererbung ist nicht erlaubt.' },
     { q: 'Ein Krieger-Objekt: Was enthält es?', options: ['Nur die Attribute von Krieger', 'Nur die von Charakter', 'Die von Charakter und Krieger', 'Zusätzlich das gesamte Schwert-Objekt'], answer: 2, explain: 'Ober- und Unterklassenattribute; das Schwert ist ein eigenes Objekt.' },
     { q: 'Wozu dient Vererbung hauptsächlich?', options: ['Programme langsamer machen', 'Doppelten Code vermeiden, Gemeinsames zentral halten', 'Attribute verstecken', 'Objekte löschen'], answer: 1, explain: 'Gemeinsamkeiten stehen nur einmal in der Oberklasse.' },
-    { q: 'Wie sagt man in Java, dass Krieger von Charakter erbt?', options: ['class Krieger inherits Charakter', 'class Krieger extends Charakter', 'class Krieger : Charakter', 'class Krieger super Charakter'], answer: 1, explain: 'extends (Zusatzstoff).' }
+    { q: 'Wie sagt man in Java, dass Krieger von Charakter erbt?', options: ['class Krieger inherits Charakter', 'class Krieger extends Charakter', 'class Krieger : Charakter', 'class Krieger super Charakter'], answer: 1, explain: 'extends – siehe Thema „Vererbung im Quellcode“.' }
   ],
   exercises: [
     { task: `<p><b>Aufgabe 1 (AB):</b> Das Klassendiagramm zeigt die Artikel einer Speisekarte: Oberklasse <b>Artikel</b> (name: String, preis: double, kalorien: int; bestellen(), servieren()); Unterklassen <b>Hauptspeise</b> (tellersorte: String, vegetarisch: boolean, salzgehalt: double; zubereiten()), <b>Dessert</b> (dekoration: String, zuckergehalt: double; zubereiten()) und <b>Getränk</b> (gefäß: String, kohlensäure: boolean, alkoholgehalt: double; einschenken()).<br>Gib zu jeder Unterklasse ein Objekt in einem Objektdiagramm mit Beispielwerten an.</p>`,

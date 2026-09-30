@@ -40,3 +40,24 @@ textarea{width:100%;min-height:80px;font:inherit;padding:8px;border-radius:8px;b
 .uml.obj div:first-child{text-decoration:underline}
 .diag{text-align:center;overflow:auto;padding:6px 0}.arrow{font-size:1.6rem;line-height:1;margin:2px 0}
 .tag{display:inline-block;font-size:.75rem;padding:1px 8px;border-radius:99px;background:rgba(79,70,229,.15);color:var(--accent);margin-left:6px}
+
+/* ---- Mobile ---- */
+html{-webkit-text-size-adjust:100%}
+body{padding-bottom:env(safe-area-inset-bottom)}
+.top{padding-top:calc(12px + env(safe-area-inset-top))}
+button,.tabs a{min-height:44px;display:inline-flex;align-items:center}
+.opt{display:block;height:auto;padding:12px 14px}
+.tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+.tabs a{white-space:nowrap}
+textarea{font-size:16px}
+img,table{max-width:100%}
+table{display:block;overflow-x:auto}
+@media(max-width:600px){
+  main{padding:14px 12px 60px}
+  .card{padding:14px}
+  h1{font-size:1.5rem}
+  h2{font-size:1.2rem}
+  .uml{min-width:0;width:calc(100% - 12px);font-size:.85rem}
+  .row button{flex:1}
+  .flash{font-size:1.1rem}
+}

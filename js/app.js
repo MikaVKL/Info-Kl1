@@ -24,8 +24,9 @@
   }
 
   // ---- Router ----
+  let cur = location.hash;
   function route() {
-    const [, kind, id, tab] = location.hash.split('/');
+    const [, kind, id, tab] = cur.split('/');
     window.scrollTo(0, 0);
     if (kind === 't') {
       const t = T.find(x => x.id === id);
@@ -34,7 +35,16 @@
     if (kind === 'exam') return exam();
     home();
   }
-  window.addEventListener('hashchange', route);
+  // Navigation im Speicher (funktioniert auch in eingebetteten Seiten); der Hash wird nur mitgeführt.
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a[href^="#/"]');
+    if (!a) return;
+    e.preventDefault();
+    cur = a.getAttribute('href');
+    try { history.replaceState(null, '', cur); } catch (err) {}
+    route();
+  });
+  window.addEventListener('hashchange', () => { cur = location.hash; route(); });
 
   function home() {
     document.getElementById('nav').innerHTML = T.length > 1 ? '<a href="#/exam">🎯 Klassenarbeit-Training</a>' : '';

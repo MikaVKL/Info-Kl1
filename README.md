@@ -27,3 +27,6 @@ Die App ist eine installierbare Web-App (PWA) und funktioniert nach dem ersten �
 3. Link auf dem Handy öffnen → Android/Chrome: Menü → „Zur Startseite hinzufügen" · iPhone/Safari: Teilen → „Zum Home-Bildschirm".
 
 Lokal testen: `python3 -m http.server` im Projektordner, dann http://localhost:8000 öffnen.
+
+## Als claude.ai-Artifact
+`python3 tools/build_single.py Info-Lernapp.html` baut die App zu einer einzelnen Datei, die als Artifact veröffentlicht werden kann.

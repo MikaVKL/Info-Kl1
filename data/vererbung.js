@@ -41,7 +41,6 @@ window.TOPICS.push({
     { term: 'Generalisierung', def: 'Gemeinsamkeiten mehrerer Klassen in eine Oberklasse zusammenfassen.' },
     { term: 'Spezialisierung', def: 'Eine Klasse durch Unterklassen mit zusätzlichen Eigenschaften genauer ausformen.' },
     { term: 'Mehrfachvererbung', def: 'Eine Klasse hat mehrere Oberklassen – in Java nicht erlaubt.' },
-    { term: 'extends', def: 'Java-Schlüsselwort für Vererbung: class Krieger extends Charakter.' }
   ],
   cards: [
     { q: 'Wie viele Oberklassen darf eine Klasse haben?', a: 'Genau eine (höchstens eine). Mehrfachvererbung ist nicht erlaubt.' },
@@ -57,7 +56,6 @@ window.TOPICS.push({
     { q: 'Welche Aussage ist falsch?', options: ['Eine Oberklasse kann mehrere Unterklassen haben', 'Eine Unterklasse kann selbst Oberklasse sein', 'Eine Klasse kann zwei Oberklassen haben', 'Unterklassen erben Attribute und Methoden'], answer: 2, explain: 'Mehrfachvererbung ist nicht erlaubt.' },
     { q: 'Ein Krieger-Objekt: Was enthält es?', options: ['Nur die Attribute von Krieger', 'Nur die von Charakter', 'Die von Charakter und Krieger', 'Zusätzlich das gesamte Schwert-Objekt'], answer: 2, explain: 'Ober- und Unterklassenattribute; das Schwert ist ein eigenes Objekt.' },
     { q: 'Wozu dient Vererbung hauptsächlich?', options: ['Programme langsamer machen', 'Doppelten Code vermeiden, Gemeinsames zentral halten', 'Attribute verstecken', 'Objekte löschen'], answer: 1, explain: 'Gemeinsamkeiten stehen nur einmal in der Oberklasse.' },
-    { q: 'Wie sagt man in Java, dass Krieger von Charakter erbt?', options: ['class Krieger inherits Charakter', 'class Krieger extends Charakter', 'class Krieger : Charakter', 'class Krieger super Charakter'], answer: 1, explain: 'extends – siehe Thema „Vererbung im Quellcode“.' }
   ],
   exercises: [
     { task: `<p><b>Aufgabe 1 (AB):</b> Das Klassendiagramm zeigt die Artikel einer Speisekarte: Oberklasse <b>Artikel</b> (name: String, preis: double, kalorien: int; bestellen(), servieren()); Unterklassen <b>Hauptspeise</b> (tellersorte: String, vegetarisch: boolean, salzgehalt: double; zubereiten()), <b>Dessert</b> (dekoration: String, zuckergehalt: double; zubereiten()) und <b>Getränk</b> (gefäß: String, kohlensäure: boolean, alkoholgehalt: double; einschenken()).<br>Gib zu jeder Unterklasse ein Objekt in einem Objektdiagramm mit Beispielwerten an.</p>`,

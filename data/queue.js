@@ -65,7 +65,6 @@ window.TOPICS.push({
       <tr><td>Einfügen/Entfernen</td><td>Elemente müssen verschoben werden bzw. Platz muss reserviert sein</td><td>schnell: nur wenige Referenzen ändern sich</td></tr>
       <tr><td>Reihenfolge</td><td>beliebig</td><td>FIFO: erst der Älteste</td></tr>
       <tr><td>Speicher</td><td>reserviert alle Plätze sofort</td><td>pro Element ein Knoten (etwas mehr Platz pro Element)</td></tr></table>` },
-    { title: 'Zusatz: Ausblick Stack', html: '<p>Der <b>Stack</b> (Stapel) ist die Gegenstück-Datenstruktur: <b>LIFO</b> (<i>Last In, First Out</i>), wie ein Tellerstapel. Wird in den nächsten Themen wichtig; die Idee mit Knoten und Referenzen ist dieselbe.</p>' }
   ],
   keyPoints: ['Queue = FIFO: hinten anstellen (enqueue), vorne entfernen (dequeue)', 'Queue hat head und tail; jeder Knoten hat next und content', 'Knoten kennt Nachfolger, nicht Vorgänger', 'dequeue() ändert nur head; enqueue() ändert next des letzten Knotens und tail', 'front() schaut nur nach (null bei leerer Queue), dequeue() ist void', 'Leere Queue: head = tail = null', 'Erst isEmpty prüfen, dann front und dequeue'],
   glossary: [

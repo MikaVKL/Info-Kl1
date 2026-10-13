@@ -117,6 +117,9 @@ select, textarea { width: 100%; font: inherit; font-size: 17px; color: var(--tex
 select { min-height: 54px; }
 textarea { padding: 12px; font-size: 15px; line-height: 1.45; resize: vertical; }
 .stack { display: grid; gap: 10px; }
+.seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 12px; overflow: hidden; margin-top: 10px; }
+.seg button { width: auto; min-height: 44px; min-width: 76px; padding: 0 16px; border-radius: 0; background: var(--field); color: var(--muted); font-size: 15px; }
+.seg button.on { background: var(--accent); color: var(--on-accent); }
 </style>
 </head>
 <body>
@@ -205,9 +208,12 @@ function sanitize(d) {
         .filter(x => isFinite(x.w) && isFinite(x.r) && x.w >= 0 && x.r > 0);
       if (clean.length) entries[id] = clean;
     }
-    if (Object.keys(entries).length) out.push({ date: s.date, plan: s.plan, entries });
+    if (!Object.keys(entries).length) continue;
+    const units = {};
+    for (const id of Object.keys(entries)) if (s.units && s.units[id] === "st") units[id] = "st";
+    out.push({ date: s.date, plan: s.plan, entries, units });
   }
-  return { sessions: out };
+  return { sessions: out, units: d && d.units && typeof d.units === "object" ? Object.fromEntries(Object.entries(d.units).filter(([k, v]) => EXERCISES[k] && v === "st")) : {} };
 }
 function loadDb() {
   try {
@@ -215,7 +221,7 @@ function loadDb() {
     if (raw !== null) return sanitize(JSON.parse(raw));
   } catch (e) { memoryOnly = true; }
   // Erster Start: Startdaten
-  const seed = { sessions: [{ date: today(), plan: "A", entries: { klimm: [{ w: 21, r: 10 }, { w: 21, r: 10 }, { w: 21, r: 8.5 }] } }] };
+  const seed = { sessions: [{ date: today(), plan: "A", entries: { klimm: [{ w: 21, r: 10 }, { w: 21, r: 10 }, { w: 21, r: 8.5 }] }, units: {} }], units: {} };
   store(KEY, seed);
   return seed;
 }
@@ -224,6 +230,10 @@ const persist = () => store(KEY, db);
 
 let drafts = {};
 try { drafts = JSON.parse(localStorage.getItem(DKEY)) || {}; } catch (e) { drafts = {}; }
+
+/* ---------- Maßeinheit (kg oder Maschinen-Stufe) ---------- */
+const curUnit = id => (db.units && db.units[id]) === "st" ? "st" : "kg";
+const unitName = (u, n) => u === "st" ? (n === 1 ? "Stufe" : "Stufen") : "kg";
 
 /* ---------- Auswertung ---------- */
 function sortedSessions() {
@@ -234,7 +244,7 @@ function lastFor(id, date, plan) {
   let found = null;
   for (const s of sortedSessions()) {
     if (!s.entries[id] || s.date > date || (s.date === date && s.plan === plan)) continue;
-    found = { date: s.date, sets: s.entries[id] };
+    found = { date: s.date, sets: s.entries[id], unit: s.units && s.units[id] === "st" ? "st" : "kg" };
   }
   return found;
 }
@@ -242,24 +252,26 @@ function lastText(ex, last) {
   const s = last.sets, reps = s.map(x => fmt(x.r)).join(" / ");
   if (ex.kind === "time") return reps + " Sek.";
   const ws = s.map(x => x.w), same = ws.every(w => w === ws[0]);
-  if (!same) return s.map(x => fmt(x.w) + "×" + fmt(x.r)).join(" · ") + " (kg × Wdh.)";
+  const un = unitName(last.unit, same ? ws[0] : 2);
+  if (!same) return s.map(x => fmt(x.w) + "×" + fmt(x.r)).join(" · ") + " (" + un + " × Wdh.)";
   if (ex.kind === "bw" && ws[0] === 0) return reps + " Wdh.";
-  const unit = ex.kind === "assist" ? "kg Unterstützung" : ex.kind === "bw" ? "kg zusätzlich" : "kg";
+  const unit = ex.kind === "assist" ? un + " Unterstützung" : ex.kind === "bw" ? un + " zusätzlich" : un;
   return fmt(ws[0]) + " " + unit + " · " + reps + " Wdh.";
 }
-function suggestion(ex, last) {
-  if (!last || last.sets.length < ex.sets || !last.sets.every(s => s.r >= ex.max)) return null;
+function suggestion(ex, last, cur) {
+  if (!last || last.unit !== cur || last.sets.length < ex.sets || !last.sets.every(s => s.r >= ex.max)) return null;
   if (ex.kind === "time")
     return { title: "Alle Sätze mit " + ex.max + " Sek. geschafft", text: "Nächste Stufe: länger halten oder die Position erschweren.", fill: null };
-  const ws = last.sets.map(s => s.w);
+  const ws = last.sets.map(s => s.w), kg = last.unit === "kg";
   if (ex.kind === "assist") {
-    const base = Math.min(...ws), lo = Math.max(0, round(base - 3)), hi = Math.max(0, round(base - 2));
-    return { title: "Vorschlag heute: " + (lo === hi ? fmt(hi) : fmt(lo) + "–" + fmt(hi)) + " kg Unterstützung",
-             text: "2–3 kg weniger als zuletzt – alle Sätze mit " + ex.max + " Wdh. geschafft.", fill: hi };
+    const base = Math.min(...ws), lo = Math.max(0, round(base - (kg ? 3 : 1))), hi = Math.max(0, round(base - (kg ? 2 : 1)));
+    const un = unitName(last.unit, lo === hi ? hi : 2);
+    return { title: "Vorschlag heute: " + (lo === hi ? fmt(hi) : fmt(lo) + "–" + fmt(hi)) + " " + un + " Unterstützung",
+             text: (kg ? "2–3 kg" : "1 Stufe") + " weniger als zuletzt – alle Sätze mit " + ex.max + " Wdh. geschafft.", fill: hi };
   }
-  const base = Math.max(...ws), fill = round(base + 2.5);
-  return { title: "Vorschlag heute: " + fmt(fill) + " kg" + (ex.kind === "bw" ? " zusätzlich" : ""),
-           text: "+2,5 kg – alle Sätze mit " + ex.max + " Wdh. geschafft.", fill };
+  const step = kg ? 2.5 : 1, base = Math.max(...ws), fill = round(base + step), un = unitName(last.unit, fill);
+  return { title: "Vorschlag heute: " + fmt(fill) + " " + un + (ex.kind === "bw" ? " zusätzlich" : ""),
+           text: "+" + fmt(step) + " " + unitName(last.unit, step) + " – alle Sätze mit " + ex.max + " Wdh. geschafft.", fill };
 }
 
 /* ---------- Ansichten ---------- */
@@ -298,23 +310,29 @@ function viewPlan(key) {
 
   const cards = plan.ids.map(id => {
     const ex = EXERCISES[id], noW = ex.kind === "time";
-    const last = lastFor(id, draft.date, key), sug = suggestion(ex, last);
+    const cur = curUnit(id), last = lastFor(id, draft.date, key), sug = suggestion(ex, last, cur), sameUnit = !!last && last.unit === cur;
     const saved = draft.entries[id] || [];
     refs[id] = [];
     const sync = () => { draft.entries[id] = refs[id].map(r => [r.w ? r.w.value : "", r.r.value]); saveDraft(); };
     const rows = [];
     for (let i = 0; i < ex.sets; i++) {
-      const lastSet = last && (last.sets[i] || last.sets[last.sets.length - 1]);
+      const lastSet = sameUnit && (last.sets[i] || last.sets[last.sets.length - 1]);
       const field = (ph, v, label) => h("input", { type: "text", inputmode: "decimal", autocomplete: "off", enterkeyhint: "next", placeholder: ph, value: v || "", "aria-label": label + " Satz " + (i + 1) + ", " + ex.name, oninput: e => { e.target.classList.remove("bad"); sync(); } });
       const ref = {};
-      if (!noW) ref.w = field(lastSet ? toInput(lastSet.w) : "kg", saved[i] && saved[i][0], "Gewicht");
-      ref.r = field(last && last.sets[i] ? toInput(last.sets[i].r) : (noW ? "Sek." : "Wdh."), saved[i] && saved[i][1], noW ? "Sekunden" : "Wiederholungen");
+      if (!noW) ref.w = field(lastSet ? toInput(lastSet.w) : unitName(cur), saved[i] && saved[i][0], "Gewicht");
+      ref.r = field(sameUnit && last.sets[i] ? toInput(last.sets[i].r) : (noW ? "Sek." : "Wdh."), saved[i] && saved[i][1], noW ? "Sekunden" : "Wiederholungen");
       refs[id].push(ref);
       rows.push(h("div", { class: "row" + (noW ? " single" : "") }, h("span", { class: "n" }, "Satz " + (i + 1)), ref.w, ref.r));
     }
-    const wLabel = ex.kind === "assist" ? "Unterstützung kg" : ex.kind === "bw" ? "Zusatz kg" : "Gewicht kg";
+    const wLabel = (ex.kind === "assist" ? "Unterstützung " : ex.kind === "bw" ? "Zusatz " : "Gewicht ") + (cur === "st" ? "(Stufe)" : "kg");
+    const unitSwitch = noW ? null : h("div", { class: "seg", role: "group", "aria-label": "Maßeinheit für " + ex.name },
+      ["kg", "st"].map(u => h("button", { type: "button", class: u === cur ? "on" : "", "aria-pressed": u === cur ? "true" : "false", onclick: () => {
+        if (u === cur) return;
+        db.units = db.units || {}; if (u === "st") db.units[id] = "st"; else delete db.units[id];
+        persist(); route(); toast("Einheit: " + (u === "st" ? "Maschinen-Stufe" : "Kilogramm"));
+      } }, u === "st" ? "Stufe" : "kg")));
     const fillWeights = v => { refs[id].forEach(r => { if (r.w) r.w.value = toInput(v); }); sync(); };
-    const tools = last ? h("div", { class: "tools" },
+    const tools = sameUnit ? h("div", { class: "tools" },
       h("button", { class: "secondary small-btn", type: "button", onclick: () => {
         refs[id].forEach((r, i) => {
           const s = last.sets[i], base = last.sets[last.sets.length - 1];
@@ -328,9 +346,10 @@ function viewPlan(key) {
         h("div", null, h("h3", null, ex.name),
           h("div", { class: "spec" }, ex.sets + " × " + ex.min + "–" + ex.max + (noW ? " Sek." : " Wdh.") + (ex.note ? " " + ex.note : ""))),
         h("a", { class: "hist-link", href: "#/ex/" + id }, "Verlauf ›")),
+      unitSwitch,
       h("div", { class: "last" }, last ? "Letztes Mal (" + dmy(last.date) + "): " + lastText(ex, last) : "Noch keine Einträge"),
       sug ? h("div", { class: "suggest" }, h("b", null, sug.title), sug.text,
-        sug.fill != null ? h("button", { type: "button", onclick: () => { fillWeights(sug.fill); toast("Vorschlag eingetragen"); } }, "Vorschlag übernehmen (" + fmt(sug.fill) + " kg)") : null) : null,
+        sug.fill != null ? h("button", { type: "button", onclick: () => { fillWeights(sug.fill); toast("Vorschlag eingetragen"); } }, "Vorschlag übernehmen (" + fmt(sug.fill) + " " + unitName(cur, sug.fill) + ")") : null) : null,
       noW ? null : h("div", { class: "cols" }, h("span"), h("span", null, wLabel), h("span", null, "Wdh.")),
       h("div", { class: "rows" }, rows),
       tools);
@@ -361,7 +380,12 @@ function viewPlan(key) {
     if (problem) { toast(problem.msg); problem.el.focus(); return; }
     if (!Object.keys(entries).length) { toast("Noch nichts eingetragen"); return; }
     let s = db.sessions.find(x => x.date === date && x.plan === key);
-    if (s) Object.assign(s.entries, entries); else db.sessions.push({ date, plan: key, entries });
+    if (!s) { s = { date, plan: key, entries: {}, units: {} }; db.sessions.push(s); }
+    s.units = s.units || {};
+    for (const id of Object.keys(entries)) {
+      s.entries[id] = entries[id];
+      if (EXERCISES[id].kind !== "time" && curUnit(id) === "st") s.units[id] = "st"; else delete s.units[id];
+    }
     persist();
     delete drafts[key]; saveDraft();
     location.hash = "#/";
@@ -405,9 +429,11 @@ function viewExercise(id) {
   if (!ex) return viewHome();
   const time = ex.kind === "time";
   const rows = sortedSessions().filter(s => s.entries[id]).map(s => ({ s, sets: s.entries[id] }));
-  const points = rows.map(r => ({ date: r.s.date, v: time ? Math.max(...r.sets.map(x => x.r)) : Math.max(...r.sets.map(x => x.w)) }));
-  const unitLabel = time ? "Sek." : "kg";
-  const chartTitle = time ? "Beste Haltezeit" : ex.kind === "assist" ? "Unterstützung (kg)" : ex.kind === "bw" ? "Zusatzgewicht (kg)" : "Gewicht (kg)";
+  const chartUnit = time || !rows.length ? "kg" : unitOf(rows[rows.length - 1].s, id);
+  const shown = rows.filter(r => time || unitOf(r.s, id) === chartUnit);
+  const points = shown.map(r => ({ date: r.s.date, v: time ? Math.max(...r.sets.map(x => x.r)) : Math.max(...r.sets.map(x => x.w)) }));
+  const unitLabel = time ? "Sek." : unitName(chartUnit);
+  const chartTitle = time ? "Beste Haltezeit" : ex.kind === "assist" ? "Unterstützung (" + unitLabel + ")" : ex.kind === "bw" ? "Zusatzgewicht (" + unitLabel + ")" : "Gewicht (" + unitLabel + ")";
 
   const remove = (s) => {
     if (!confirm("Eintrag vom " + dmy(s.date) + " (" + ex.name + ") löschen?")) return;
@@ -419,7 +445,8 @@ function viewExercise(id) {
     h("thead", null, h("tr", null, h("th", null, "Datum"), time ? null : h("th", null, "Gewicht"), h("th", null, time ? "Sekunden" : "Wdh."), h("th"))),
     h("tbody", null, rows.slice().reverse().map(({ s, sets }) => {
       const ws = sets.map(x => x.w), same = ws.every(w => w === ws[0]);
-      const wText = same ? fmt(ws[0]) + " kg" : ws.map(fmt).join(" / ") + " kg";
+      const un = unitName(unitOf(s, id), same ? ws[0] : 2);
+      const wText = same ? fmt(ws[0]) + " " + un : ws.map(fmt).join(" / ") + " " + un;
       return h("tr", null, h("td", null, dmy(s.date)),
         time ? null : h("td", null, wText),
         h("td", null, sets.map(x => fmt(x.r)).join(" / ")),
@@ -431,6 +458,7 @@ function viewExercise(id) {
     h("h1", null, ex.name),
     h("p", { class: "muted" }, ex.sets + " × " + ex.min + "–" + ex.max + (time ? " Sek." : " Wdh.") + (ex.note ? " " + ex.note : "")),
     h("h2", null, chartTitle),
+    shown.length < rows.length ? h("p", { class: "small muted" }, "Das Diagramm zeigt nur Einträge mit der zuletzt verwendeten Einheit (" + unitLabel + "), damit nichts vermischt wird.") : null,
     h("div", { class: "card" }, points.length ? lineChart(points, unitLabel) : h("p", { class: "muted" }, "Das Diagramm erscheint nach dem ersten Speichern.")),
     h("h2", null, "Einträge"),
     h("div", { class: "card" }, table));
@@ -457,12 +485,13 @@ function viewData() {
     } }, "Alle Daten löschen"));
 }
 
+const unitOf = (s, id) => s.units && s.units[id] === "st" ? "st" : "kg";
 function sessionText(s) {
   const lines = [PLANS[s.plan].name + " – " + dmy(s.date)];
   for (const id of PLANS[s.plan].ids) {
     if (!s.entries[id]) continue;
     const ex = EXERCISES[id];
-    lines.push("- " + ex.name + (ex.note ? " (" + ex.note + ")" : "") + ": " + lastText(ex, { sets: s.entries[id] }));
+    lines.push("- " + ex.name + (ex.note ? " (" + ex.note + ")" : "") + ": " + lastText(ex, { sets: s.entries[id], unit: unitOf(s, id) }));
   }
   return lines.join("\n");
 }

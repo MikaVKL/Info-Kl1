@@ -113,6 +113,9 @@ td.x button { min-height: 44px; width: 44px; padding: 0; background: transparent
   opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; pointer-events: none; z-index: 10;
 }
 .toast.show { opacity: 1; transform: none; }
+select, textarea { width: 100%; font: inherit; font-size: 17px; color: var(--text); background: var(--field); border: 1.5px solid var(--line); border-radius: 12px; padding: 0 12px; }
+select { min-height: 54px; }
+textarea { padding: 12px; font-size: 15px; line-height: 1.45; resize: vertical; }
 .stack { display: grid; gap: 10px; }
 </style>
 </head>
@@ -445,11 +448,42 @@ function viewData() {
       h("button", { type: "button", class: "secondary", onclick: () => fileIn.click() }, "Backup importieren"),
       fileIn),
     h("p", { class: "small muted", style: "margin-top:12px" }, "Beim Import werden Einheiten gleichen Datums überschrieben, alle anderen bleiben erhalten."),
+    h("h2", null, "Für den Claude-Chat"),
+    textExport(),
     h("h2", null, "Zurücksetzen"),
     h("button", { type: "button", class: "danger", onclick: () => {
       if (!confirm("Wirklich ALLE Trainingsdaten löschen? Das lässt sich nicht rückgängig machen.")) return;
       db = { sessions: [] }; drafts = {}; persist(); store(DKEY, drafts); toast("Alle Daten gelöscht"); route();
     } }, "Alle Daten löschen"));
+}
+
+function sessionText(s) {
+  const lines = [PLANS[s.plan].name + " – " + dmy(s.date)];
+  for (const id of PLANS[s.plan].ids) {
+    if (!s.entries[id]) continue;
+    const ex = EXERCISES[id];
+    lines.push("- " + ex.name + (ex.note ? " (" + ex.note + ")" : "") + ": " + lastText(ex, { sets: s.entries[id] }));
+  }
+  return lines.join("\n");
+}
+function textExport() {
+  const all = sortedSessions().reverse();
+  if (!all.length) return h("p", { class: "muted" }, "Noch keine Einheiten gespeichert.");
+  const sel = h("select", { "aria-label": "Einheit wählen" },
+    h("option", { value: "all" }, "Alle Einheiten (neueste zuerst)"),
+    all.map((s, i) => h("option", { value: i }, dmy(s.date) + " – " + PLANS[s.plan].name)));
+  const build = () => sel.value === "all" ? all.map(sessionText).join("\n\n") : sessionText(all[Number(sel.value)]);
+  const ta = h("textarea", { readonly: true, rows: 9, "aria-label": "Trainingsdaten als Text" });
+  const update = () => { ta.value = build(); };
+  sel.addEventListener("change", update);
+  sel.value = "0"; update();
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(ta.value); toast("Kopiert – jetzt im Chat einfügen"); }
+    catch (e) { ta.focus(); ta.select(); toast("Text markiert – bitte manuell kopieren"); }
+  };
+  return h("div", { class: "stack" },
+    h("p", { class: "small muted", style: "margin:0" }, "Wähle eine Einheit, kopiere den Text und füge ihn im Claude-Chat ein."),
+    sel, ta, h("button", { type: "button", onclick: copy }, "Text kopieren"));
 }
 
 function exportData() {

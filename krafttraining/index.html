@@ -461,7 +461,9 @@ function viewExercise(id) {
     shown.length < rows.length ? h("p", { class: "small muted" }, "Das Diagramm zeigt nur Einträge mit der zuletzt verwendeten Einheit (" + unitLabel + "), damit nichts vermischt wird.") : null,
     h("div", { class: "card" }, points.length ? lineChart(points, unitLabel) : h("p", { class: "muted" }, "Das Diagramm erscheint nach dem ersten Speichern.")),
     h("h2", null, "Einträge"),
-    h("div", { class: "card" }, table));
+    h("div", { class: "card" }, table),
+    rows.length ? h("h2", null, "Für den Claude-Chat") : null,
+    rows.length ? copyBox(() => exerciseText(id), "Alle Einträge dieser Übung plus Vergleich erster → letzter Eintrag.").el : null);
 }
 
 function viewData() {
@@ -495,24 +497,52 @@ function sessionText(s) {
   }
   return lines.join("\n");
 }
-function textExport() {
-  const all = sortedSessions().reverse();
-  if (!all.length) return h("p", { class: "muted" }, "Noch keine Einheiten gespeichert.");
-  const sel = h("select", { "aria-label": "Einheit wählen" },
-    h("option", { value: "all" }, "Alle Einheiten (neueste zuerst)"),
-    all.map((s, i) => h("option", { value: i }, dmy(s.date) + " – " + PLANS[s.plan].name)));
-  const build = () => sel.value === "all" ? all.map(sessionText).join("\n\n") : sessionText(all[Number(sel.value)]);
+function exerciseText(id) {
+  const ex = EXERCISES[id], time = ex.kind === "time";
+  const rows = sortedSessions().filter(s => s.entries[id]).map(s => ({ s, sets: s.entries[id], unit: unitOf(s, id) }));
+  const head = ex.name + " – Verlauf (" + rows.length + " Einheit" + (rows.length === 1 ? "" : "en") + ", Ziel " + ex.sets + " × " + ex.min + "–" + ex.max + (time ? " Sek." : " Wdh.") + (ex.note ? " " + ex.note : "") + ")";
+  const lines = [head].concat(rows.map(r => dmy(r.s.date) + ": " + lastText(ex, { sets: r.sets, unit: r.unit })));
+  if (rows.length >= 2) {
+    const a = rows[0], b = rows[rows.length - 1];
+    const sign = d => (d > 0 ? "+" : d < 0 ? "−" : "±") + fmt(Math.abs(d));
+    const sum = r => r.sets.reduce((t, x) => t + x.r, 0);
+    lines.push("", "Vergleich " + dmy(a.s.date) + " → " + dmy(b.s.date) + ":");
+    if (!time && a.unit === b.unit) {
+      const wa = Math.max(...a.sets.map(x => x.w)), wb = Math.max(...b.sets.map(x => x.w));
+      lines.push("- " + (ex.kind === "assist" ? "Unterstützung" : "Gewicht") + ": " + fmt(wa) + " → " + fmt(wb) + " " + unitName(b.unit, wb) + " (" + sign(wb - wa) + ")" + (ex.kind === "assist" ? " – weniger Unterstützung = besser" : ""));
+    } else if (!time) lines.push("- Gewicht: nicht vergleichbar (Einheit gewechselt)");
+    lines.push("- Wiederholungen gesamt: " + fmt(sum(a)) + " → " + fmt(sum(b)) + " (" + sign(sum(b) - sum(a)) + ")" + (time ? " Sek." : ""));
+  }
+  return lines.join("\n");
+}
+function copyBox(getText, hint) {
   const ta = h("textarea", { readonly: true, rows: 9, "aria-label": "Trainingsdaten als Text" });
-  const update = () => { ta.value = build(); };
-  sel.addEventListener("change", update);
-  sel.value = "0"; update();
+  const update = () => { ta.value = getText(); };
   const copy = async () => {
+    update();
     try { await navigator.clipboard.writeText(ta.value); toast("Kopiert – jetzt im Chat einfügen"); }
     catch (e) { ta.focus(); ta.select(); toast("Text markiert – bitte manuell kopieren"); }
   };
-  return h("div", { class: "stack" },
-    h("p", { class: "small muted", style: "margin:0" }, "Wähle eine Einheit, kopiere den Text und füge ihn im Claude-Chat ein."),
-    sel, ta, h("button", { type: "button", onclick: copy }, "Text kopieren"));
+  update();
+  return { update, el: h("div", { class: "stack" }, hint ? h("p", { class: "small muted", style: "margin:0" }, hint) : null, ta, h("button", { type: "button", onclick: copy }, "Text kopieren")) };
+}
+function textExport() {
+  const all = sortedSessions().reverse();
+  if (!all.length) return h("p", { class: "muted" }, "Noch keine Einheiten gespeichert.");
+  const ids = Object.keys(EXERCISES);
+  const sel = h("select", { "aria-label": "Auswahl" },
+    h("optgroup", { label: "Einzelne Einheit" }, all.map((s, i) => h("option", { value: "s" + i }, dmy(s.date) + " – " + PLANS[s.plan].name))),
+    h("optgroup", { label: "Fortschritt einer Übung" }, ids.map(id => h("option", { value: "e" + id }, EXERCISES[id].name + " – Verlauf"))),
+    h("optgroup", { label: "Alles" }, h("option", { value: "all" }, "Alle Einheiten (neueste zuerst)")));
+  const build = () => {
+    const v = sel.value;
+    if (v === "all") return all.map(sessionText).join("\n\n");
+    if (v[0] === "e") return exerciseText(v.slice(1));
+    return sessionText(all[Number(v.slice(1))]);
+  };
+  const box = copyBox(build, "Wähle eine Einheit oder den Fortschritt einer Übung, kopiere den Text und füge ihn im Claude-Chat ein.");
+  sel.addEventListener("change", box.update);
+  return h("div", { class: "stack" }, sel, box.el);
 }
 
 function exportData() {

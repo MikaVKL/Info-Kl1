@@ -1,7 +1,7 @@
 // Quellen: "Übersicht über die Operatoren Informatik" (abitur.nrw), "Korrektur von Klausuren / Korrekturzeichen" (abitur.nrw),
 // "Zentralabitur 2028 Informatik, Vorgaben" (abitur.nrw). Zusammenstellung und Merkhilfen von Claude.
 window.TOPICS.push({
-  id: 'klausur-wegweiser', week: 0, title: 'Klausur-Wegweiser: Operatoren & Korrekturzeichen',
+  id: 'klausur-wegweiser', week: 0, tag: 'tipps', title: 'Klausur-Wegweiser: Operatoren & Korrekturzeichen',
   summary: 'Was „angeben", „beschreiben", „begründen" … in der Aufgabe verlangen, was die Korrekturzeichen bedeuten und was bis zum Abitur dran kommt.',
   sections: [
     { title: 'Warum Operatoren wichtig sind', html: `<p>In jeder Klausuraufgabe steht ein <b>Operator</b>, also das Verb, das sagt, <i>wie viel</i> und <i>wie</i> du antworten sollst. Wer „beschreibe" mit einem Wort beantwortet oder bei „begründe" nur eine Behauptung hinschreibt, verschenkt Punkte, auch wenn er das Thema kann.</p>

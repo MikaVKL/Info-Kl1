@@ -61,3 +61,5 @@ table{display:block;overflow-x:auto}
   .row button{flex:1}
   .flash{font-size:1.1rem}
 }
+
+details>summary{padding:6px 0}

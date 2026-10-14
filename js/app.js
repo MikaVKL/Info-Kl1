@@ -11,7 +11,7 @@
   const prog = id => { const d = load(); return d[id] || { known: [], best: null, done: [] }; };
   const setProg = (id, fn) => { const d = load(); d[id] = d[id] || { known: [], best: null, done: [] }; fn(d[id]); save(d); };
 
-  const wk = t => t.week === 0 ? 'Grundlagen' : 'Woche ' + t.week;
+  const wk = t => t.week === 0 ? (t.tag === 'tipps' ? 'Klausur-Tipps' : 'Grundlagen') : 'Woche ' + t.week;
   const cardsOf = t => [...(t.glossary || []).map(g => ({ q: esc(g.term), a: g.def })), ...(t.cards || [])];
 
   function pct(t) {
@@ -46,14 +46,18 @@
   });
   window.addEventListener('hashchange', () => { cur = location.hash; route(); });
 
-  const topicCard = t => `<a class="card topic" href="#/t/${t.id}/lesson"><div class="week">${wk(t)}</div><h2 style="margin:4px 0">${esc(t.title)}</h2><div class="muted">${esc(t.summary || '')}</div><div class="bar"><i style="width:${pct(t)}%"></i></div></a>`;
+  const topicCard = (t, badge) => `<a class="card topic" href="#/t/${t.id}/lesson"><div class="week">${wk(t)}${badge ? '<span class="tag">' + badge + '</span>' : ''}</div><h2 style="margin:4px 0">${esc(t.title)}</h2><div class="muted">${esc(t.summary || '')}</div><div class="bar"><i style="width:${pct(t)}%"></i></div></a>`;
+  const isTip = t => t.tag === 'tipps';
+  const isBasic = t => t.week === 0 && !isTip(t);
   function home() {
     document.getElementById('nav').innerHTML = '';
-    const lessons = T.filter(t => t.week > 0).reverse(), basics = T.filter(t => t.week === 0);
-    app.innerHTML = '<h1>Deine Themen</h1><p class="muted">Lies die Erklärung, übe mit Karteikarten, teste dich im Quiz und löse das Arbeitsblatt.</p>' +
-      (T.length > 1 ? '<a class="card topic" href="#/exam"><div class="week">Üben</div><h2 style="margin:4px 0">🎯 Klassenarbeit-Training</h2><div class="muted">Quizfragen aus den Themen deiner Wahl gemischt.</div></a>' : '') +
-      (lessons.length ? '<h2>Unterrichtsthemen <span class="muted" style="font-size:.9rem">(neuestes zuerst)</span></h2>' + lessons.map(topicCard).join('') : '') +
-      (basics.length ? '<h2>Grundlagen & Nachschlagen</h2><p class="muted">Vorwissen und Klausur-Hilfen, die auf den Unterrichtsthemen aufbauen.</p>' + basics.map(topicCard).join('') : '') +
+    const lessons = T.filter(t => t.week > 0), tips = T.filter(isTip), basics = T.filter(isBasic);
+    const next = lessons.find(t => pct(t) < 100);
+    app.innerHTML = '<h1>Klassenarbeit schaffen</h1><p class="muted">Die Unterrichtsthemen der Reihe nach: Erklärung lesen, Karteikarten üben, Quiz machen, Arbeitsblatt lösen.</p>' +
+      (T.length > 1 ? '<a class="card topic" href="#/exam"><div class="week">Üben</div><h2 style="margin:4px 0">🎯 Klassenarbeit-Training</h2><div class="muted">Quizfragen aus den Unterrichtsthemen gemischt.</div></a>' : '') +
+      (lessons.length ? '<h2>Unterrichtsthemen</h2>' + lessons.map(t => topicCard(t, t === next ? 'Weiter hier' : '')).join('') : '') +
+      (tips.length ? '<h2>Klausur-Tipps</h2>' + tips.map(t => topicCard(t)).join('') : '') +
+      (basics.length ? '<details><summary>Grundlagen & Nachschlagen (nur bei Bedarf)</summary><p class="muted">Vorwissen, falls dir in einem Unterrichtsthema etwas fehlt.</p>' + basics.map(t => topicCard(t)).join('') + '</details>' : '') +
       (T.length ? '' : '<div class="card">Noch keine Themen.</div>');
   }
 
@@ -68,8 +72,8 @@
 
   // ---- Erklärung ----
   function lesson(t, el) {
-    el.innerHTML = (t.sections || []).map(s => `<div class="card"><h2 style="margin-top:0">${esc(s.title)}</h2>${s.html}</div>`).join('') +
-      (t.keyPoints ? `<div class="card"><h2 style="margin-top:0">✅ Das musst du für die Arbeit wissen</h2><ul>${t.keyPoints.map(k => `<li>${k}</li>`).join('')}</ul></div>` : '');
+    el.innerHTML = (t.keyPoints ? `<div class="card"><h2 style="margin-top:0">✅ Das musst du für die Arbeit wissen</h2><ul>${t.keyPoints.map(k => `<li>${k}</li>`).join('')}</ul></div>` : '') +
+      (t.sections || []).map(s => `<div class="card"><h2 style="margin-top:0">${esc(s.title)}</h2>${s.html}</div>`).join('');
   }
 
   // ---- Karteikarten ----
@@ -140,8 +144,10 @@
   // ---- Klassenarbeit-Training (alle Themen gemischt) ----
   function exam() {
     document.getElementById('nav').innerHTML = '<a href="#/">← Alle Themen</a>';
+    const row = (t, on) => `<label style="display:block"><input type="checkbox" class="sel" value="${t.id}" ${on ? 'checked' : ''}> ${wk(t)}: ${esc(t.title)}</label>`;
+    const main = T.filter(t => !isBasic(t)), basics = T.filter(isBasic);
     app.innerHTML = `<h1>🎯 Klassenarbeit-Training</h1><p class="muted">Wähle die Themen, die drankommen:</p>
-      <div class="card">${T.map(t => `<label style="display:block"><input type="checkbox" class="sel" value="${t.id}" checked> ${wk(t)}: ${esc(t.title)}</label>`).join('')}</div>
+      <div class="card">${main.map(t => row(t, true)).join('')}${basics.length ? '<details><summary>Grundlagen (optional)</summary>' + basics.map(t => row(t, false)).join('') + '</details>' : ''}</div>
       <button id="go">Start</button><div id="qz"></div>`;
     document.getElementById('go').onclick = () => {
       const ids = [...document.querySelectorAll('.sel:checked')].map(x => x.value);

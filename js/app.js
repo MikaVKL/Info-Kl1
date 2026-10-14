@@ -12,7 +12,7 @@
   const setProg = (id, fn) => { const d = load(); d[id] = d[id] || { known: [], best: null, done: [] }; fn(d[id]); save(d); };
 
   const wk = t => t.week === 0 ? 'Grundlagen' : 'Woche ' + t.week;
-  const cardsOf = t => [...(t.glossary || []).map(g => ({ q: g.term, a: g.def })), ...(t.cards || [])];
+  const cardsOf = t => [...(t.glossary || []).map(g => ({ q: esc(g.term), a: g.def })), ...(t.cards || [])];
 
   function pct(t) {
     const p = prog(t.id), c = cardsOf(t).length, e = (t.exercises || []).length;
@@ -46,10 +46,15 @@
   });
   window.addEventListener('hashchange', () => { cur = location.hash; route(); });
 
+  const topicCard = t => `<a class="card topic" href="#/t/${t.id}/lesson"><div class="week">${wk(t)}</div><h2 style="margin:4px 0">${esc(t.title)}</h2><div class="muted">${esc(t.summary || '')}</div><div class="bar"><i style="width:${pct(t)}%"></i></div></a>`;
   function home() {
-    document.getElementById('nav').innerHTML = T.length > 1 ? '<a href="#/exam">🎯 Klassenarbeit-Training</a>' : '';
-    app.innerHTML = '<h1>Deine Themen</h1><p class="muted">Ein Thema pro Woche – lies die Erklärung, übe mit Karteikarten, teste dich im Quiz und löse das Arbeitsblatt.</p>' +
-      (T.length ? T.map(t => `<a class="card topic" href="#/t/${t.id}/lesson"><div class="week">${wk(t)}</div><h2 style="margin:4px 0">${esc(t.title)}</h2><div class="muted">${esc(t.summary || '')}</div><div class="bar"><i style="width:${pct(t)}%"></i></div></a>`).join('') : '<div class="card">Noch keine Themen.</div>');
+    document.getElementById('nav').innerHTML = '';
+    const lessons = T.filter(t => t.week > 0).reverse(), basics = T.filter(t => t.week === 0);
+    app.innerHTML = '<h1>Deine Themen</h1><p class="muted">Lies die Erklärung, übe mit Karteikarten, teste dich im Quiz und löse das Arbeitsblatt.</p>' +
+      (T.length > 1 ? '<a class="card topic" href="#/exam"><div class="week">Üben</div><h2 style="margin:4px 0">🎯 Klassenarbeit-Training</h2><div class="muted">Quizfragen aus den Themen deiner Wahl gemischt.</div></a>' : '') +
+      (lessons.length ? '<h2>Unterrichtsthemen <span class="muted" style="font-size:.9rem">(neuestes zuerst)</span></h2>' + lessons.map(topicCard).join('') : '') +
+      (basics.length ? '<h2>Grundlagen & Nachschlagen</h2><p class="muted">Vorwissen und Klausur-Hilfen, die auf den Unterrichtsthemen aufbauen.</p>' + basics.map(topicCard).join('') : '') +
+      (T.length ? '' : '<div class="card">Noch keine Themen.</div>');
   }
 
   function topic(t, tab) {
@@ -82,7 +87,7 @@
       }
       const c = deck[pos];
       el.innerHTML = `<div class="muted">Karte ${pos + 1}/${deck.length} · gewusst: ${p.known.length}/${all.length}</div>
-        <div class="card flash" id="card">${shown ? c.a : esc(c.q)}</div>
+        <div class="card flash" id="card">${shown ? c.a : c.q}</div>
         <div class="row">${shown ? '<button id="yes">✅ Gewusst</button><button class="ghost" id="no">🔁 Nochmal</button>' : '<button id="show">Antwort zeigen</button>'}</div>`;
       const flip = () => { shown = true; draw(); };
       if (!shown) { document.getElementById('show').onclick = flip; document.getElementById('card').onclick = flip; }
@@ -124,10 +129,11 @@
     const ex = t.exercises || [], p = prog(t.id);
     if (!ex.length) return el.innerHTML = '<div class="card">Keine Aufgaben.</div>';
     el.innerHTML = ex.map((e, i) => `<div class="card"><h3 style="margin-top:0">Aufgabe ${i + 1}</h3>${e.task}
-      <textarea placeholder="Deine Lösung…"></textarea>
+      <textarea class="note" data-i="${i}" placeholder="Deine Lösung…">${esc((p.notes || {})[i] || '')}</textarea>
       ${e.hint ? `<details><summary>💡 Tipp</summary>${e.hint}</details>` : ''}
       <details><summary>Musterlösung mit Erklärung</summary>${e.solution}</details>
       <label><input type="checkbox" data-i="${i}" ${p.done.includes(i) ? 'checked' : ''}> Erledigt & verstanden</label></div>`).join('');
+    el.querySelectorAll('textarea.note').forEach(a => a.oninput = () => setProg(t.id, x => { x.notes = x.notes || {}; x.notes[a.dataset.i] = a.value; }));
     el.querySelectorAll('input[type=checkbox]').forEach(c => c.onchange = () => setProg(t.id, x => { const i = +c.dataset.i; x.done = x.done.filter(d => d !== i); if (c.checked) x.done.push(i); }));
   }
 

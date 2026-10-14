@@ -46,9 +46,9 @@ window.TOPICS.push({
       <b>Feiner bei Wortschatz (W):</b> A = Ausdruck/unpassende Stilebene, <b>FS = Fachsprache (fehlend/falsch)</b>.</p>
       <p><b>Inhaltliche Zeichen:</b></p>
       <table><tr><th>Zeichen</th><th>Bedeutung</th></tr>
-      <tr><td>Haken ✓</td><td>richtig</td></tr><tr><td><b>f</b></td><td>falsch</td></tr>
-      <tr><td><b>( )</b> (Klammer um den Haken)</td><td>folgerichtig: richtige Lösung auf Grundlage einer fehlerhaften Annahme oder eines falschen Zwischenergebnisses</td></tr>
-      <tr><td>Schlangenlinie</td><td>ungenau</td></tr>
+      <tr><td>Haken</td><td>richtig</td></tr><tr><td><b>f</b></td><td>falsch</td></tr>
+      <tr><td><b>( )</b></td><td>folgerichtig: richtige Lösung auf Grundlage einer fehlerhaften Annahme oder eines falschen Zwischenergebnisses</td></tr>
+      <tr><td>(Sonderzeichen)</td><td>ungenau</td></tr>
       <tr><td>[ — ]</td><td>Streichung (überflüssiges Wort/Passage)</td></tr>
       <tr><td>Γ bzw. #</td><td>Auslassung</td></tr><tr><td><b>Wdh</b></td><td>Wiederholung, wenn vermeidbar</td></tr></table>
       <div class="tip"><b>Gut zu wissen:</b> Wiederholte Fehler werden mit „s.o." markiert und in der Regel <u>nicht</u> mehrfach gewertet. Gehäufte Verstöße gegen die sprachliche Richtigkeit können die Note um eine Stufe (Einführungsphase) bzw. bis zu zwei Notenpunkte (Qualifikationsphase) senken. Dein Tipp: Fachbegriffe richtig schreiben (FS) und ganze Sätze nutzen.</div>

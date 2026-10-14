@@ -24,7 +24,7 @@ public Wartezimmer()
   ],
   keyPoints: ['Generische Klasse = Klasse mit Platzhalter für den Inhaltstyp (ContentType)', 'Queue<Patient>: Platzhalter wird durch Patient ersetzt', 'Typsicher: nur Objekte dieser Klasse passen hinein', 'Eine Klasse für beliebige Inhalte'],
   glossary: [
-    { term: 'Generische Klasse', def: 'Klasse mit einem Platzhalter für einen Typ, der erst bei der Benutzung festgelegt wird (z. B. Queue<Patient>).' },
+    { term: 'Generische Klasse', def: 'Klasse mit einem Platzhalter für einen Typ, der erst bei der Benutzung festgelegt wird (z. B. Queue&lt;Patient&gt;).' },
     { term: 'ContentType', def: 'Name des Platzhalters für den Inhaltstyp in der Klasse Queue.' },
     { term: 'Typsicherheit', def: 'Der Compiler lässt nur Objekte des festgelegten Typs zu.' }
   ],

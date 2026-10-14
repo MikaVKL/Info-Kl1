@@ -26,7 +26,7 @@ window.TOPICS.push({
       <li>Der Knoten kennt seinen <b>Inhalt</b> über die Referenz <b><code>content</code></b> (hier ein Patient). Weil man Queues auch für andere Dinge nutzt (Vokabelkarten, Netzwerkpakete …), heißt sie allgemein „content".</li></ul>
       <div class="tip"><b>Merke:</b> Ein Knoten kennt seinen Nachfolger, aber <u>nicht</u> seinen Vorgänger. Die Queue kennt nur Anfang und Ende. Alles dazwischen findet man nur, indem man von Knoten zu Knoten über <code>next</code> wandert.</div>
       <p><b>Zustand mit zwei Patienten:</b></p>${chain(['Löw', 'Klinsmann'])}` },
-    { title: 'Generisch: Queue&lt;Patient&gt;', html: `<p>Die Klasse Queue ist <b>generisch</b>: Der Platzhalter <code>ContentType</code> wird bei der Deklaration ersetzt. <code>Queue&lt;Patient&gt; q1;</code> nimmt nur Patienten auf. Dann steht überall <code>Patient</code>, wo vorher <code>ContentType</code> stand (<code>enqueue(Patient pContent)</code>, <code>Patient front()</code>).</p>
+    { title: 'Generisch: Queue<Patient>', html: `<p>Die Klasse Queue ist <b>generisch</b>: Der Platzhalter <code>ContentType</code> wird bei der Deklaration ersetzt. <code>Queue&lt;Patient&gt; q1;</code> nimmt nur Patienten auf. Dann steht überall <code>Patient</code>, wo vorher <code>ContentType</code> stand (<code>enqueue(Patient pContent)</code>, <code>Patient front()</code>).</p>
       <p>Mehr dazu im Grundlagen-Thema „Generische Klassen".</p>` },
     { title: 'Die Methoden der Klasse Queue', html: `<p>In eigenen Projekten brauchst du <b>nur die Methoden der Klasse Queue</b>. Die Methoden von QueueNode sind nur für die Implementierung der Queue nötig und für dich nicht relevant.</p>
       <table><tr><th>Methode</th><th>Wirkung</th></tr>

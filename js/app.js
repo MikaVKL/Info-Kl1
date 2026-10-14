@@ -46,25 +46,33 @@
   });
   window.addEventListener('hashchange', () => { cur = location.hash; route(); });
 
-  const topicCard = (t, badge) => `<a class="card topic" href="#/t/${t.id}/lesson"><div class="week">${wk(t)}${badge ? '<span class="tag">' + badge + '</span>' : ''}</div><h2 style="margin:4px 0">${esc(t.title)}</h2><div class="muted">${esc(t.summary || '')}</div><div class="bar"><i style="width:${pct(t)}%"></i></div></a>`;
+  const stat = (label, done) => `<span class="stat${done ? ' done' : ''}">${label}</span>`;
+  function stats(t) {
+    const p = prog(t.id), c = cardsOf(t).length, e = (t.exercises || []).length, out = [];
+    if (c) out.push(stat(`Karten ${p.known.length}/${c}`, p.known.length >= c));
+    if ((t.quiz || []).length) out.push(stat(`Quiz ${p.best === null ? '–' : Math.round(p.best * 100) + '%'}`, p.best === 1));
+    if (e) out.push(stat(`Aufgaben ${p.done.length}/${e}`, p.done.length >= e));
+    return `<div class="stats">${out.join('')}</div>`;
+  }
+  const topicCard = (t, badge) => `<a class="card topic" href="#/t/${t.id}/lesson"><div class="week">${wk(t)}${badge ? '<span class="tag">' + badge + '</span>' : ''}</div><h2>${esc(t.title)}</h2><div class="desc">${esc(t.summary || '')}</div>${stats(t)}<div class="bar"><i style="width:${pct(t)}%"></i></div></a>`;
   const isTip = t => t.tag === 'tipps';
   const isBasic = t => t.week === 0 && !isTip(t);
   function home() {
     document.getElementById('nav').innerHTML = '';
     const lessons = T.filter(t => t.week > 0), tips = T.filter(isTip), basics = T.filter(isBasic);
     const next = lessons.find(t => pct(t) < 100);
-    app.innerHTML = '<h1>Klassenarbeit schaffen</h1><p class="muted">Die Unterrichtsthemen der Reihe nach: Erklärung lesen, Karteikarten üben, Quiz machen, Arbeitsblatt lösen.</p>' +
-      (T.length > 1 ? '<a class="card topic" href="#/exam"><div class="week">Üben</div><h2 style="margin:4px 0">🎯 Klassenarbeit-Training</h2><div class="muted">Quizfragen aus den Unterrichtsthemen gemischt.</div></a>' : '') +
-      (lessons.length ? '<h2>Unterrichtsthemen</h2>' + lessons.map(t => topicCard(t, t === next ? 'Weiter hier' : '')).join('') : '') +
-      (tips.length ? '<h2>Klausur-Tipps</h2>' + tips.map(t => topicCard(t)).join('') : '') +
-      (basics.length ? '<details><summary>Grundlagen & Nachschlagen (nur bei Bedarf)</summary><p class="muted">Vorwissen, falls dir in einem Unterrichtsthema etwas fehlt.</p>' + basics.map(t => topicCard(t)).join('') + '</details>' : '') +
+    app.innerHTML = '<div class="hero"><h1>Klassenarbeit schaffen</h1><p class="muted">Geh die Unterrichtsthemen der Reihe nach durch: Erklärung lesen, Karteikarten üben, Quiz machen, Arbeitsblatt lösen.</p></div>' +
+      (T.length > 1 ? '<a class="card topic train" href="#/exam"><div class="week">Üben</div><h2>Klassenarbeit-Training</h2><div class="desc">Quizfragen aus den Unterrichtsthemen gemischt, wie ein Probedurchlauf.</div></a>' : '') +
+      (lessons.length ? '<div class="section-title"><h2>Unterrichtsthemen</h2></div><div class="grid">' + lessons.map(t => topicCard(t, t === next ? 'Weiter hier' : '')).join('') + '</div>' : '') +
+      (tips.length ? '<div class="section-title"><h2>Klausur-Tipps</h2></div><div class="grid">' + tips.map(t => topicCard(t)).join('') + '</div>' : '') +
+      (basics.length ? '<details class="more"><summary>Grundlagen und Nachschlagen (nur bei Bedarf)</summary><p class="muted">Vorwissen, falls dir in einem Unterrichtsthema etwas fehlt.</p><div class="grid">' + basics.map(t => topicCard(t)).join('') + '</div></details>' : '') +
       (T.length ? '' : '<div class="card">Noch keine Themen.</div>');
   }
 
   function topic(t, tab) {
     document.getElementById('nav').innerHTML = '<a href="#/">← Alle Themen</a>';
-    const tabs = [['lesson', '📖 Erklärung'], ['cards', '🗂 Karteikarten'], ['quiz', '❓ Quiz'], ['exercises', '📝 Arbeitsblatt']];
-    app.innerHTML = `<div class="week">${wk(t)}</div><h1 style="margin:2px 0">${esc(t.title)}</h1>
+    const tabs = [['lesson', 'Erklärung'], ['cards', 'Karteikarten'], ['quiz', 'Quiz'], ['exercises', 'Arbeitsblatt']];
+    app.innerHTML = `<div class="week">${wk(t)}</div><h1 style="margin:4px 0 0">${esc(t.title)}</h1>
       <div class="tabs">${tabs.map(([k, l]) => `<a href="#/t/${t.id}/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</div><div id="body"></div>`;
     const body = document.getElementById('body');
     ({ lesson, cards, quiz, exercises }[tab] || lesson)(t, body);
@@ -72,8 +80,11 @@
 
   // ---- Erklärung ----
   function lesson(t, el) {
-    el.innerHTML = (t.keyPoints ? `<div class="card"><h2 style="margin-top:0">✅ Das musst du für die Arbeit wissen</h2><ul>${t.keyPoints.map(k => `<li>${k}</li>`).join('')}</ul></div>` : '') +
-      (t.sections || []).map(s => `<div class="card"><h2 style="margin-top:0">${esc(s.title)}</h2>${s.html}</div>`).join('');
+    const secs = t.sections || [];
+    el.innerHTML = (t.keyPoints ? `<div class="must"><h2><span>Das musst du für die Arbeit wissen</span></h2><ul>${t.keyPoints.map(k => `<li>${k}</li>`).join('')}</ul></div>` : '') +
+      (secs.length > 2 ? `<div class="toc" aria-label="Inhalt">${secs.map((x, i) => `<button class="ghost" data-i="${i}">${i + 1}. ${esc(x.title)}</button>`).join('')}</div>` : '') +
+      secs.map((x, i) => `<section class="card sec" id="sec${i}"><h2><span class="n">${i + 1}</span>${esc(x.title)}</h2>${x.html}</section>`).join('');
+    el.querySelectorAll('.toc button').forEach(b => b.onclick = () => document.getElementById('sec' + b.dataset.i).scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 
   // ---- Karteikarten ----
@@ -84,15 +95,16 @@
     const draw = () => {
       const p = prog(t.id);
       if (pos >= deck.length) {
-        el.innerHTML = `<div class="card"><h2>Fertig! 🎉</h2><p>${p.known.length} von ${all.length} Karten sitzen.</p><button id="again">Nochmal (nur unsichere)</button> <button class="ghost" id="reset">Alles zurücksetzen</button></div>`;
+        el.innerHTML = `<div class="card"><h2>Geschafft</h2><p>${p.known.length} von ${all.length} Karten sitzen.</p><button id="again">Nochmal (nur unsichere)</button> <button class="ghost" id="reset">Alles zurücksetzen</button></div>`;
         document.getElementById('again').onclick = () => { deck = shuffle(all.map((c, i) => ({ ...c, i })).filter(c => !p.known.includes(c.i))); if (!deck.length) deck = shuffle(all.map((c, i) => ({ ...c, i }))); pos = 0; shown = false; draw(); };
         document.getElementById('reset').onclick = () => { setProg(t.id, x => x.known = []); deck = shuffle(all.map((c, i) => ({ ...c, i }))); pos = 0; shown = false; draw(); };
         return;
       }
       const c = deck[pos];
-      el.innerHTML = `<div class="muted">Karte ${pos + 1}/${deck.length} · gewusst: ${p.known.length}/${all.length}</div>
-        <div class="card flash" id="card">${shown ? c.a : c.q}</div>
-        <div class="row">${shown ? '<button id="yes">✅ Gewusst</button><button class="ghost" id="no">🔁 Nochmal</button>' : '<button id="show">Antwort zeigen</button>'}</div>`;
+      el.innerHTML = `<div class="qhead"><span>Karte ${pos + 1} von ${deck.length}</span><span>gewusst: ${p.known.length}/${all.length}</span></div>
+        <div class="bar"><i style="width:${100 * pos / deck.length}%"></i></div>
+        <div class="card flash${shown ? ' back' : ''}" id="card"><small>${shown ? 'Antwort' : 'Frage'}</small><div>${shown ? c.a : c.q}</div></div>
+        <div class="row">${shown ? '<button id="yes">Gewusst</button><button class="ghost" id="no">Nochmal üben</button>' : '<button id="show">Antwort zeigen</button>'}</div>`;
       const flip = () => { shown = true; draw(); };
       if (!shown) { document.getElementById('show').onclick = flip; document.getElementById('card').onclick = flip; }
       else {
@@ -108,14 +120,14 @@
     const qs = shuffle(questions);
     let n = 0, score = 0;
     const step = () => {
-      if (n >= qs.length) { el.innerHTML = `<div class="card"><h2>Ergebnis: ${score}/${qs.length}</h2><div class="bar"><i style="width:${100 * score / qs.length}%"></i></div><p><button id="r">Nochmal</button></p></div>`; onDone && onDone(score / qs.length); document.getElementById('r').onclick = () => runQuiz(questions, el, onDone); return; }
+      if (n >= qs.length) { el.innerHTML = `<div class="card"><h2>Ergebnis</h2><div class="score">${score} von ${qs.length}</div><div class="bar"><i style="width:${100 * score / qs.length}%"></i></div><p><button id="r">Nochmal</button></p></div>`; onDone && onDone(score / qs.length); document.getElementById('r').onclick = () => runQuiz(questions, el, onDone); return; }
       const q = qs[n], opts = shuffle(q.options.map((o, i) => ({ o, ok: i === q.answer })));
-      el.innerHTML = `<div class="muted">Frage ${n + 1}/${qs.length}${q.topic ? ' · ' + esc(q.topic) : ''}</div><div class="card"><h3 style="margin-top:0">${q.q}</h3>${opts.map((o, i) => `<button class="opt" data-i="${i}">${o.o}</button>`).join('')}<div id="fb"></div></div>`;
+      el.innerHTML = `<div class="qhead"><span>Frage ${n + 1} von ${qs.length}</span><span>${q.topic ? esc(q.topic) : ''}</span></div><div class="bar"><i style="width:${100 * n / qs.length}%"></i></div><div class="card" style="margin-top:12px"><h3 style="margin-top:0">${q.q}</h3>${opts.map((o, i) => `<button class="opt" data-i="${i}"><span class="ltr">${'ABCD'[i]}</span><span>${o.o}</span></button>`).join('')}<div id="fb"></div></div>`;
       el.querySelectorAll('.opt').forEach(b => b.onclick = () => {
         const o = opts[+b.dataset.i]; if (o.ok) score++;
         el.querySelectorAll('.opt').forEach((x, i) => { x.disabled = true; if (opts[i].ok) x.classList.add('right'); });
         if (!o.ok) b.classList.add('wrong');
-        document.getElementById('fb').innerHTML = `<div class="${o.ok ? 'tip' : 'warn'}"><b>${o.ok ? 'Richtig!' : 'Leider falsch.'}</b> ${q.explain || ''}</div><button id="nx">${n + 1 < qs.length ? 'Weiter' : 'Ergebnis'}</button>`;
+        document.getElementById('fb').innerHTML = `<div class="${o.ok ? 'tip' : 'warn'}"><b>${o.ok ? 'Richtig.' : 'Nicht ganz.'}</b> ${q.explain || ''}</div><button id="nx">${n + 1 < qs.length ? 'Weiter' : 'Ergebnis'}</button>`;
         document.getElementById('nx').onclick = () => { n++; step(); };
       });
     };
@@ -124,7 +136,7 @@
   function quiz(t, el) {
     if (!(t.quiz || []).length) return el.innerHTML = '<div class="card">Kein Quiz.</div>';
     const p = prog(t.id);
-    el.innerHTML = `<div class="muted">Bestes Ergebnis: ${p.best === null ? '–' : Math.round(p.best * 100) + '%'}</div><div id="qz"></div>`;
+    el.innerHTML = `<p class="muted">Bestes Ergebnis: ${p.best === null ? 'noch keins' : Math.round(p.best * 100) + '%'}</p><div id="qz"></div>`;
     runQuiz(t.quiz, document.getElementById('qz'), r => setProg(t.id, x => { if (x.best === null || r > x.best) x.best = r; }));
   }
 
@@ -132,11 +144,11 @@
   function exercises(t, el) {
     const ex = t.exercises || [], p = prog(t.id);
     if (!ex.length) return el.innerHTML = '<div class="card">Keine Aufgaben.</div>';
-    el.innerHTML = ex.map((e, i) => `<div class="card"><h3 style="margin-top:0">Aufgabe ${i + 1}</h3>${e.task}
-      <textarea class="note" data-i="${i}" placeholder="Deine Lösung…">${esc((p.notes || {})[i] || '')}</textarea>
-      ${e.hint ? `<details><summary>💡 Tipp</summary>${e.hint}</details>` : ''}
+    el.innerHTML = ex.map((e, i) => `<div class="card task"><h3><span class="n">${i + 1}</span>Aufgabe</h3>${e.task}
+      <textarea class="note" data-i="${i}" placeholder="Deine Lösung hier aufschreiben …">${esc((p.notes || {})[i] || '')}</textarea>
+      ${e.hint ? `<details><summary>Tipp anzeigen</summary>${e.hint}</details>` : ''}
       <details><summary>Musterlösung mit Erklärung</summary>${e.solution}</details>
-      <label><input type="checkbox" data-i="${i}" ${p.done.includes(i) ? 'checked' : ''}> Erledigt & verstanden</label></div>`).join('');
+      <div class="done-row"><label><input type="checkbox" data-i="${i}" ${p.done.includes(i) ? 'checked' : ''}> Erledigt und verstanden</label></div></div>`).join('');
     el.querySelectorAll('textarea.note').forEach(a => a.oninput = () => setProg(t.id, x => { x.notes = x.notes || {}; x.notes[a.dataset.i] = a.value; }));
     el.querySelectorAll('input[type=checkbox]').forEach(c => c.onchange = () => setProg(t.id, x => { const i = +c.dataset.i; x.done = x.done.filter(d => d !== i); if (c.checked) x.done.push(i); }));
   }
@@ -146,9 +158,9 @@
     document.getElementById('nav').innerHTML = '<a href="#/">← Alle Themen</a>';
     const row = (t, on) => `<label style="display:block"><input type="checkbox" class="sel" value="${t.id}" ${on ? 'checked' : ''}> ${wk(t)}: ${esc(t.title)}</label>`;
     const main = T.filter(t => !isBasic(t)), basics = T.filter(isBasic);
-    app.innerHTML = `<h1>🎯 Klassenarbeit-Training</h1><p class="muted">Wähle die Themen, die drankommen:</p>
+    app.innerHTML = `<h1>Klassenarbeit-Training</h1><p class="muted">Wähle die Themen, die drankommen:</p>
       <div class="card">${main.map(t => row(t, true)).join('')}${basics.length ? '<details><summary>Grundlagen (optional)</summary>' + basics.map(t => row(t, false)).join('') + '</details>' : ''}</div>
-      <button id="go">Start</button><div id="qz"></div>`;
+      <p><button id="go">Training starten</button></p><div id="qz"></div>`;
     document.getElementById('go').onclick = () => {
       const ids = [...document.querySelectorAll('.sel:checked')].map(x => x.value);
       const qs = T.filter(t => ids.includes(t.id)).flatMap(t => (t.quiz || []).map(q => ({ ...q, topic: t.title })));

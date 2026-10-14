@@ -8,6 +8,7 @@ app = (root / 'js/app.js').read_text()
 data = [ (root / m).read_text() for m in re.findall(r'<script src="(data/[^"]+)"', html) ]
 body = re.search(r'<body>(.*?)<script>window.TOPICS', html, re.S).group(1)
 out = f'''<title>Info-Lernapp</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 {css}
 </style>

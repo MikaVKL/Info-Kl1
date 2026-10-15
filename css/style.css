@@ -151,3 +151,17 @@ label{cursor:pointer}
 #fb .tip::before,#fb .warn::before{content:"Erklärung"}
 #fb .tip,#fb .warn{margin:12px 0}
 .toc button{text-align:left}
+
+/* Struktogramm */
+.nsd{border:1.5px solid var(--ink);background:var(--surface);font-size:.9rem;text-align:left;margin:10px 0;max-width:480px}
+.nsd .s{padding:5px 10px;border-top:1.5px solid var(--ink)}
+.nsd>.s:first-child,.nsd .b>.s:first-child,.nsd .br>div>.s:first-child{border-top:0}
+.nsd .w>.h{padding:5px 10px;background:var(--accent-soft)}
+.nsd .w>.b{margin-left:22px;border-left:1.5px solid var(--ink);border-top:1.5px solid var(--ink)}
+.nsd .i{border-top:1.5px solid var(--ink)}
+.nsd>.i:first-child{border-top:0}
+.nsd .i>.h{text-align:center;padding:5px 10px;background:var(--mark-soft)}
+.nsd .i>.br{display:flex;border-top:1.5px solid var(--ink)}
+.nsd .i>.br>div{flex:1;border-left:1.5px solid var(--ink);min-width:0}
+.nsd .i>.br>div:first-child{border-left:0}
+.nsd .lab{font-size:.72rem;color:var(--muted);padding:2px 8px;border-bottom:1px dashed var(--line)}

@@ -11,16 +11,15 @@
   const prog = id => { const d = load(); return d[id] || { known: [], best: null, done: [] }; };
   const setProg = (id, fn) => { const d = load(); d[id] = d[id] || { known: [], best: null, done: [] }; fn(d[id]); save(d); };
 
-  const wk = t => t.week === 0 ? (t.tag === 'tipps' ? 'Klausur-Tipps' : 'Grundlagen') : 'Woche ' + t.week;
+  const wk = t => t.week === 0 ? (t.tag === 'tipps' ? 'Klausur' : 'Grundlagen') : 'Woche ' + t.week;
   const cardsOf = t => [...(t.glossary || []).map(g => ({ q: esc(g.term), a: g.def })), ...(t.cards || [])];
 
   function pct(t) {
-    const p = prog(t.id), c = cardsOf(t).length, e = (t.exercises || []).length;
-    const parts = [];
-    if (c) parts.push(p.known.length / c);
-    if (e) parts.push(p.done.length / e);
-    if (p.best !== null) parts.push(p.best);
-    return parts.length ? Math.round(100 * parts.reduce((a, b) => a + b, 0) / 3) : 0;
+    const p = prog(t.id), c = cardsOf(t).length, e = (t.exercises || []).length, q = (t.quiz || []).length;
+    const avail = (c ? 1 : 0) + (e ? 1 : 0) + (q ? 1 : 0);
+    if (!avail) return 0;
+    const sum = (c ? p.known.length / c : 0) + (e ? p.done.length / e : 0) + (q && p.best !== null ? p.best : 0);
+    return Math.round(100 * sum / avail);
   }
 
   // ---- Router ----
@@ -64,14 +63,14 @@
     app.innerHTML = '<div class="hero"><h1>Klassenarbeit schaffen</h1><p class="muted">Geh die Unterrichtsthemen der Reihe nach durch: Erklärung lesen, Karteikarten üben, Quiz machen, Arbeitsblatt lösen.</p></div>' +
       (T.length > 1 ? '<a class="card topic train" href="#/exam"><div class="week">Üben</div><h2>Klassenarbeit-Training</h2><div class="desc">Quizfragen aus den Unterrichtsthemen gemischt, wie ein Probedurchlauf.</div></a>' : '') +
       (lessons.length ? '<div class="section-title"><h2>Unterrichtsthemen</h2></div><div class="grid">' + lessons.map(t => topicCard(t, t === next ? 'Weiter hier' : '')).join('') + '</div>' : '') +
-      (tips.length ? '<div class="section-title"><h2>Klausur-Tipps</h2></div><div class="grid">' + tips.map(t => topicCard(t)).join('') + '</div>' : '') +
+      (tips.length ? '<div class="section-title"><h2>Klausur-Vorbereitung</h2></div><div class="grid">' + tips.map(t => topicCard(t)).join('') + '</div>' : '') +
       (basics.length ? '<details class="more"><summary>Grundlagen und Nachschlagen (nur bei Bedarf)</summary><p class="muted">Vorwissen, falls dir in einem Unterrichtsthema etwas fehlt.</p><div class="grid">' + basics.map(t => topicCard(t)).join('') + '</div></details>' : '') +
       (T.length ? '' : '<div class="card">Noch keine Themen.</div>');
   }
 
   function topic(t, tab) {
     document.getElementById('nav').innerHTML = '<a href="#/">← Alle Themen</a>';
-    const tabs = [['lesson', 'Erklärung'], ['cards', 'Karteikarten'], ['quiz', 'Quiz'], ['exercises', 'Arbeitsblatt']];
+    const tabs = [['lesson', 'Erklärung'], ['cards', 'Karteikarten'], ['quiz', 'Quiz'], ['exercises', 'Arbeitsblatt']].filter(([k]) => k === 'lesson' || (k === 'cards' && cardsOf(t).length) || (k === 'quiz' && (t.quiz || []).length) || (k === 'exercises' && (t.exercises || []).length));
     app.innerHTML = `<div class="week">${wk(t)}</div><h1 style="margin:4px 0 0">${esc(t.title)}</h1>
       <div class="tabs">${tabs.map(([k, l]) => `<a href="#/t/${t.id}/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</div><div id="body"></div>`;
     const body = document.getElementById('body');

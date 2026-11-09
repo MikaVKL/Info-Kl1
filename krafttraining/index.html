@@ -59,6 +59,9 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .plan b { display: block; font-size: 26px; }
 .plan span { color: var(--muted); font-size: 15px; }
 .plan:active { transform: scale(.99); }
+.plans.two { grid-template-columns: 1fr 1fr; margin-top: 0; }
+.plan.small-plan { padding: 18px 14px; border-radius: 16px; }
+.plan.small-plan b { font-size: 19px; }
 
 .list { background: var(--card); border: 1.5px solid var(--line); border-radius: 16px; overflow: hidden; }
 .list a { display: flex; justify-content: space-between; align-items: center; min-height: 52px; padding: 8px 16px; color: var(--text); text-decoration: none; border-top: 1px solid var(--line); }
@@ -141,11 +144,19 @@ const EXERCISES = {
   curl:   { name: "Beinbeuger-Maschine",        sets: 3, min: 10, max: 12, kind: "normal" },
   ruder:  { name: "Rudermaschine (Brustpolster)", sets: 3, min: 10, max: 12, kind: "normal" },
   rot:    { name: "Außenrotation",              sets: 2, min: 12, max: 15, kind: "normal", note: "pro Seite" },
-  heben:  { name: "Beinheben",                  sets: 3, min: 8,  max: 12, kind: "bw" }
+  heben:  { name: "Beinheben",                  sets: 3, min: 8,  max: 12, kind: "bw" },
+  brust:  { name: "Brustpresse",                sets: 3, min: 8,  max: 12, kind: "normal" },
+  schulter: { name: "Schulterpresse",           sets: 3, min: 8,  max: 12, kind: "normal" },
+  trizeps: { name: "Trizepsdrücken am Kabel",   sets: 3, min: 10, max: 15, kind: "normal" },
+  strecker: { name: "Beinstrecker",             sets: 3, min: 10, max: 15, kind: "normal" },
+  wade:   { name: "Wadenheben",                 sets: 3, min: 12, max: 15, kind: "normal" }
 };
 const PLANS = {
   A: { name: "Einheit A", ids: ["klimm", "bein", "kabel", "face", "hollow"] },
-  B: { name: "Einheit B", ids: ["latzug", "curl", "ruder", "rot", "heben"] }
+  B: { name: "Einheit B", ids: ["latzug", "curl", "ruder", "rot", "heben"] },
+  // Alternative: Upper/Lower-Split (teilt sich Übungen und Verlauf mit A und B)
+  O: { name: "Oberkörper", ids: ["klimm", "brust", "ruder", "schulter", "face", "trizeps"], alt: true },
+  U: { name: "Unterkörper", ids: ["bein", "curl", "strecker", "wade", "hollow", "heben"], alt: true }
 };
 
 /* ---------- Hilfsfunktionen ---------- */
@@ -280,13 +291,15 @@ const backLink = (href, label) => h("a", { class: "back", href }, "‹ " + (labe
 
 function viewHome() {
   const sessions = sortedSessions();
+  const baseIds = PLANS.A.ids.concat(PLANS.B.ids);
+  const extraIds = [...new Set(PLANS.O.ids.concat(PLANS.U.ids))].filter(id => !baseIds.includes(id));
   const planBtn = key => {
     const last = sessions.filter(s => s.plan === key).pop();
-    return h("a", { class: "plan", href: "#/plan/" + key },
+    return h("a", { class: "plan" + (PLANS[key].alt ? " small-plan" : ""), href: "#/plan/" + key },
       h("b", null, PLANS[key].name),
       h("span", null, PLANS[key].ids.length + " Übungen" + (last ? " · zuletzt " + dmy(last.date) : " · noch nicht trainiert")));
   };
-  const exLinks = key => h("div", { class: "list" }, PLANS[key].ids.map(id => {
+  const exLinks = ids => h("div", { class: "list" }, ids.map(id => {
     const n = sessions.filter(s => s.entries[id]).length;
     return h("a", { href: "#/ex/" + id }, EXERCISES[id].name, h("span", null, n + "×"));
   }));
@@ -294,8 +307,11 @@ function viewHome() {
     h("h1", null, "Krafttraining"),
     h("p", { class: "muted" }, "Welche Einheit steht heute an?"),
     h("div", { class: "plans" }, planBtn("A"), planBtn("B")),
-    h("h2", null, "Verlauf · Einheit A"), exLinks("A"),
-    h("h2", null, "Verlauf · Einheit B"), exLinks("B"),
+    h("h2", null, "Alternative: Upper/Lower"),
+    h("div", { class: "plans two" }, planBtn("O"), planBtn("U")),
+    h("h2", null, "Verlauf · Einheit A"), exLinks(PLANS.A.ids),
+    h("h2", null, "Verlauf · Einheit B"), exLinks(PLANS.B.ids),
+    extraIds.length ? [h("h2", null, "Verlauf · weitere Übungen (Upper/Lower)"), exLinks(extraIds)] : null,
     h("h2", null, "Daten"),
     h("a", { class: "btn secondary", href: "#/daten" }, "Export / Import (Backup)"),
     memoryOnly ? h("p", { class: "small", style: "color:var(--danger);margin-top:12px" }, "Achtung: Der Browser erlaubt kein Speichern (privater Modus?). Daten gehen beim Schließen verloren.") : null);

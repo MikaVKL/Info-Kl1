@@ -76,6 +76,8 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .last { font-size: 14px; color: var(--muted); margin: 8px 0 10px; }
 .suggest { background: var(--tint); border-radius: 12px; padding: 10px 12px; margin: 0 0 12px; font-size: 15px; }
 .suggest b { display: block; }
+.suggest.strong { border: 2px solid var(--accent); }
+.list a span b.up { display: inline; color: var(--accent); font-weight: 700; }
 .suggest button { margin-top: 8px; min-height: 44px; font-size: 15px; }
 .rows { display: grid; gap: 8px; }
 .row { display: grid; grid-template-columns: 52px 1fr 1fr; gap: 8px; align-items: center; }
@@ -259,6 +261,31 @@ function lastFor(id, date, plan) {
   }
   return found;
 }
+// Wie viele Einheiten in Folge (neueste zuerst) alle Sätze am oberen Ende, mit gleichem Gewicht und gleicher Einheit
+function streakFor(id, date, plan) {
+  const ex = EXERCISES[id];
+  let n = 0, w = null, u = null;
+  const list = sortedSessions().filter(s => s.entries[id] && s.date <= date && !(s.date === date && s.plan === plan)).reverse();
+  for (const s of list) {
+    const sets = s.entries[id], un = s.units && s.units[id] === "st" ? "st" : "kg";
+    const mw = ex.kind === "time" ? 0 : Math.max(...sets.map(x => x.w));
+    if (sets.length < ex.sets || !sets.every(x => x.r >= ex.max)) break;
+    if (n === 0) { w = mw; u = un; } else if (mw !== w || un !== u) break;
+    n++;
+  }
+  return { n, w, u };
+}
+// Aus dem Vorschlag einen deutlicheren Hinweis machen, wenn es schon mehrere Einheiten in Folge so lief
+function strongHint(ex, sug, st) {
+  if (!sug || st.n < 2) return sug;
+  const time = ex.kind === "time", what = sug.title.replace(/^Vorschlag heute: /, "");
+  return Object.assign({}, sug, {
+    strong: true,
+    title: time ? "Jetzt steigern: nächste Stufe" : "Jetzt steigern: " + what,
+    text: st.n + " Einheiten in Folge alle Sätze mit " + ex.max + (time ? " Sek." : " Wdh. bei " + fmt(st.w) + " " + unitName(st.u, st.w)) +
+          (time ? " – Zeit für die nächste Stufe." : ex.kind === "assist" ? " – Zeit für weniger Unterstützung." : " – Zeit für mehr Gewicht.")
+  });
+}
 function lastText(ex, last) {
   const s = last.sets, reps = s.map(x => fmt(x.r)).join(" / ");
   if (ex.kind === "time") return reps + " Sek.";
@@ -300,8 +327,9 @@ function viewHome() {
       h("span", null, PLANS[key].ids.length + " Übungen" + (last ? " · zuletzt " + dmy(last.date) : " · noch nicht trainiert")));
   };
   const exLinks = ids => h("div", { class: "list" }, ids.map(id => {
-    const n = sessions.filter(s => s.entries[id]).length;
-    return h("a", { href: "#/ex/" + id }, EXERCISES[id].name, h("span", null, n + "×"));
+    const n = sessions.filter(s => s.entries[id]).length, st = streakFor(id, "9999-12-31", "");
+    return h("a", { href: "#/ex/" + id }, EXERCISES[id].name,
+      h("span", null, st.n >= 1 ? h("b", { class: "up" }, st.n >= 2 ? "↑ jetzt steigern  " : "↑ steigern  ") : null, n + "×"));
   }));
   return h("div", null,
     h("h1", null, "Krafttraining"),
@@ -326,7 +354,7 @@ function viewPlan(key) {
 
   const cards = plan.ids.map(id => {
     const ex = EXERCISES[id], noW = ex.kind === "time";
-    const cur = curUnit(id), last = lastFor(id, draft.date, key), sug = suggestion(ex, last, cur), sameUnit = !!last && last.unit === cur;
+    const cur = curUnit(id), last = lastFor(id, draft.date, key), sug = strongHint(ex, suggestion(ex, last, cur), streakFor(id, draft.date, key)), sameUnit = !!last && last.unit === cur;
     const saved = draft.entries[id] || [];
     refs[id] = [];
     const sync = () => { draft.entries[id] = refs[id].map(r => [r.w ? r.w.value : "", r.r.value]); saveDraft(); };
@@ -364,7 +392,7 @@ function viewPlan(key) {
         h("a", { class: "hist-link", href: "#/ex/" + id }, "Verlauf ›")),
       unitSwitch,
       h("div", { class: "last" }, last ? "Letztes Mal (" + dmy(last.date) + "): " + lastText(ex, last) : "Noch keine Einträge"),
-      sug ? h("div", { class: "suggest" }, h("b", null, sug.title), sug.text,
+      sug ? h("div", { class: "suggest" + (sug.strong ? " strong" : "") }, h("b", null, sug.title), sug.text,
         sug.fill != null ? h("button", { type: "button", onclick: () => { fillWeights(sug.fill); toast("Vorschlag eingetragen"); } }, "Vorschlag übernehmen (" + fmt(sug.fill) + " " + unitName(cur, sug.fill) + ")") : null) : null,
       noW ? null : h("div", { class: "cols" }, h("span"), h("span", null, wLabel), h("span", null, "Wdh.")),
       h("div", { class: "rows" }, rows),

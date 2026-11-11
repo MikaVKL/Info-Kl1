@@ -133,6 +133,7 @@ textarea { padding: 12px; font-size: 15px; line-height: 1.45; resize: vertical; 
 .hg-arm { stroke: var(--accent); stroke-width: 6; stroke-linecap: round; fill: none; }
 .hg-head { fill: var(--field); stroke: var(--text); stroke-width: 5; }
 .hg-dot { fill: var(--accent); }
+.hg-up { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 0; fill: none; }
 .hg-txt { fill: var(--muted); font-size: 11px; }
 .hg-key { fill: var(--accent); font-size: 11px; font-weight: 700; }
 .hg-t { font-weight: 600; font-size: 15px; margin-bottom: 2px; }
@@ -461,26 +462,28 @@ function viewPlan(key) {
 
 /* ---------- Hilfe: Hollow Hold in 3 Stufen ---------- */
 const HOLLOW_STAGES = [
-  { n: "Stufe 1", lvl: 1, t: "Knie angewinkelt, Arme neben dem Körper", d: "Knie ca. 90°, Waden hängen locker, Schultern knapp vom Boden. Guter Start: 10–15 Sek.", knee: [215, 108], foot: [277, 112], hand: [168, 150], head: [72, 140], armLabel: "Arme neben dem Körper" },
-  { n: "Stufe 2", lvl: 2, t: "Beine gestreckt (ca. 45°), Arme neben dem Körper", d: "Je tiefer die Füße, desto schwerer. Hebt sich der Rücken ab: Beine wieder höher.", foot: [282, 76], hand: [168, 150], head: [72, 140], armLabel: "Arme neben dem Körper" },
-  { n: "Stufe 3", lvl: 3, t: "Beine gestreckt (tief), Arme über dem Kopf", d: "Volle Hollow-Position. Mit langen Hebeln besonders schwer.", foot: [304, 104], hand: [22, 128], head: [78, 138], armLabel: "Arme überm Kopf" }
+  { n: "Stufe 1", lvl: 1, t: "Knie angewinkelt, Arme neben dem Körper", d: "Knie ca. 90°, Waden hängen locker. Rippen zur Hüfte ziehen, bis die Schulterblätter vom Boden abheben. Guter Start: 10–15 Sek.", knee: [215, 108], foot: [277, 112], hand: [172, 146], head: [82, 124], armLabel: "Arme neben dem Körper" },
+  { n: "Stufe 2", lvl: 2, t: "Beine gestreckt (ca. 45°), Arme neben dem Körper", d: "Je tiefer die Füße, desto schwerer. Hebt sich der untere Rücken ab: Beine wieder höher. Schulterblätter bleiben oben.", foot: [282, 76], hand: [172, 146], head: [82, 124], armLabel: "Arme neben dem Körper" },
+  { n: "Stufe 3", lvl: 3, t: "Beine gestreckt (tief), Arme über dem Kopf", d: "Volle Hollow-Position, der ganze Körper bildet eine flache Schale. Mit langen Hebeln besonders schwer.", foot: [304, 104], hand: [24, 114], head: [84, 122], armLabel: "Arme überm Kopf" }
 ];
 function hollowGuide(open) {
   const NS = "http://www.w3.org/2000/svg";
   const mk = (tag, a, text) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (text != null) e.textContent = text; return e; };
-  const Sh = [100, 150], Hp = [190, 166];
+  const Sh = [100, 132], Hp = [190, 166];
   const figs = HOLLOW_STAGES.map(x => {
     const svg = mk("svg", { viewBox: "0 58 360 144", role: "img", "aria-label": x.n + ": " + x.t, class: "hg" });
     svg.append(mk("line", { class: "hg-floor", x1: 8, y1: 172, x2: 352, y2: 172 }),
-      mk("path", { class: "hg-body", d: "M" + Sh + " Q150 168 " + Hp }),
+      mk("path", { class: "hg-body", d: "M" + Sh + " Q150 190 " + Hp }),
       mk("path", { class: "hg-arm", d: "M" + Sh + " L" + x.hand }),
       mk("circle", { class: "hg-dot", cx: x.hand[0], cy: x.hand[1], r: 4 }),
       mk("path", { class: "hg-body", d: x.knee ? "M" + Hp + " L" + x.knee + " L" + x.foot : "M" + Hp + " L" + x.foot }),
       mk("circle", { class: "hg-head", cx: x.head[0], cy: x.head[1], r: 12 }),
       mk("path", { class: "hg-body", d: "M" + Sh + " L" + (x.head[0] + 10) + " " + (x.head[1] + 8) }),
-      mk("circle", { class: "hg-dot", cx: 168, cy: 170, r: 5 }),
-      mk("text", { class: "hg-key", x: 172, y: 190, "text-anchor": "middle" }, "Rücken am Boden"),
-      mk("text", { class: "hg-txt", x: 22, y: x.knee ? 118 : 112 }, x.armLabel));
+      mk("circle", { class: "hg-dot", cx: 160, cy: 170, r: 5 }),
+      mk("text", { class: "hg-key", x: 190, y: 190 }, "Unterer Rücken am Boden"),
+      mk("path", { class: "hg-up", d: "M100 168 L100 142 M94 150 L100 142 L106 150" }),
+      mk("text", { class: "hg-key", x: 22, y: 190 }, "Schulterblätter hoch"),
+      mk("text", { class: "hg-txt", x: 22, y: 84 }, x.armLabel));
     if (x.knee) svg.append(mk("text", { class: "hg-txt", x: x.knee[0] - 8, y: x.knee[1] - 10, "text-anchor": "end" }, "Knie ca. 90°"));
     return h("div", { class: "hg-card" },
       h("div", { class: "hg-head-row" }, h("b", null, x.n), h("span", { class: "hg-lvl", "aria-hidden": "true" }, "●".repeat(x.lvl) + "○".repeat(3 - x.lvl))),
@@ -488,7 +491,7 @@ function hollowGuide(open) {
   });
   return h("details", { class: "hg-box", open: open ? true : null },
     h("summary", null, "Hollow Hold: Stufen ansehen"),
-    h("p", { class: "small muted", style: "margin:8px 0" }, "Seitenansicht, Kopf links. Der untere Rücken bleibt immer am Boden. Gehe erst eine Stufe weiter, wenn du 3 × 30 Sek. schaffst."),
+    h("p", { class: "small muted", style: "margin:8px 0" }, "Seitenansicht, Kopf links. Unterer Rücken am Boden, Schulterblätter abgehoben – nicht nur der Kopf. Gehe erst eine Stufe weiter, wenn du so 3 × 30 Sek. schaffst."),
     figs);
 }
 

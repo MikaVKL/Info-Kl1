@@ -122,6 +122,20 @@ select, textarea { width: 100%; font: inherit; font-size: 17px; color: var(--tex
 select { min-height: 54px; }
 textarea { padding: 12px; font-size: 15px; line-height: 1.45; resize: vertical; }
 .stack { display: grid; gap: 10px; }
+.hg-box { margin-top: 12px; }
+.hg-box summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; color: var(--accent); }
+.hg-card { background: var(--field); border: 1.5px solid var(--line); border-radius: 14px; padding: 10px 12px 12px; margin: 10px 0; }
+.hg-head-row { display: flex; justify-content: space-between; align-items: center; }
+.hg-lvl { color: var(--accent); letter-spacing: .1em; font-size: 14px; }
+.hg { display: block; width: 100%; height: auto; margin: 6px 0; }
+.hg-floor { stroke: var(--line); stroke-width: 3; }
+.hg-body { stroke: var(--text); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.hg-arm { stroke: var(--accent); stroke-width: 6; stroke-linecap: round; fill: none; }
+.hg-head { fill: var(--field); stroke: var(--text); stroke-width: 5; }
+.hg-dot { fill: var(--accent); }
+.hg-txt { fill: var(--muted); font-size: 11px; }
+.hg-key { fill: var(--accent); font-size: 11px; font-weight: 700; }
+.hg-t { font-weight: 600; font-size: 15px; margin-bottom: 2px; }
 .seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 12px; overflow: hidden; margin-top: 10px; }
 .seg button { width: auto; min-height: 44px; min-width: 76px; padding: 0 16px; border-radius: 0; background: var(--field); color: var(--muted); font-size: 15px; }
 .seg button.on { background: var(--accent); color: var(--on-accent); }
@@ -396,7 +410,8 @@ function viewPlan(key) {
         sug.fill != null ? h("button", { type: "button", onclick: () => { fillWeights(sug.fill); toast("Vorschlag eingetragen"); } }, "Vorschlag übernehmen (" + fmt(sug.fill) + " " + unitName(cur, sug.fill) + ")") : null) : null,
       noW ? null : h("div", { class: "cols" }, h("span"), h("span", null, wLabel), h("span", null, "Wdh.")),
       h("div", { class: "rows" }, rows),
-      tools);
+      tools,
+      id === "hollow" ? hollowGuide(false) : null);
   });
 
   function save() {
@@ -442,6 +457,39 @@ function viewPlan(key) {
     h("div", { class: "datebar" }, h("label", null, "Datum"), dateIn),
     cards,
     h("div", { class: "savebar" }, h("button", { type: "button", onclick: save }, plan.name + " speichern")));
+}
+
+/* ---------- Hilfe: Hollow Hold in 3 Stufen ---------- */
+const HOLLOW_STAGES = [
+  { n: "Stufe 1", lvl: 1, t: "Knie angewinkelt, Arme neben dem Körper", d: "Knie ca. 90°, Waden hängen locker, Schultern knapp vom Boden. Guter Start: 10–15 Sek.", knee: [215, 108], foot: [277, 112], hand: [168, 150], head: [72, 140], armLabel: "Arme neben dem Körper" },
+  { n: "Stufe 2", lvl: 2, t: "Beine gestreckt (ca. 45°), Arme neben dem Körper", d: "Je tiefer die Füße, desto schwerer. Hebt sich der Rücken ab: Beine wieder höher.", foot: [282, 76], hand: [168, 150], head: [72, 140], armLabel: "Arme neben dem Körper" },
+  { n: "Stufe 3", lvl: 3, t: "Beine gestreckt (tief), Arme über dem Kopf", d: "Volle Hollow-Position. Mit langen Hebeln besonders schwer.", foot: [304, 104], hand: [22, 128], head: [78, 138], armLabel: "Arme überm Kopf" }
+];
+function hollowGuide(open) {
+  const NS = "http://www.w3.org/2000/svg";
+  const mk = (tag, a, text) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (text != null) e.textContent = text; return e; };
+  const Sh = [100, 150], Hp = [190, 166];
+  const figs = HOLLOW_STAGES.map(x => {
+    const svg = mk("svg", { viewBox: "0 58 360 144", role: "img", "aria-label": x.n + ": " + x.t, class: "hg" });
+    svg.append(mk("line", { class: "hg-floor", x1: 8, y1: 172, x2: 352, y2: 172 }),
+      mk("path", { class: "hg-body", d: "M" + Sh + " Q150 168 " + Hp }),
+      mk("path", { class: "hg-arm", d: "M" + Sh + " L" + x.hand }),
+      mk("circle", { class: "hg-dot", cx: x.hand[0], cy: x.hand[1], r: 4 }),
+      mk("path", { class: "hg-body", d: x.knee ? "M" + Hp + " L" + x.knee + " L" + x.foot : "M" + Hp + " L" + x.foot }),
+      mk("circle", { class: "hg-head", cx: x.head[0], cy: x.head[1], r: 12 }),
+      mk("path", { class: "hg-body", d: "M" + Sh + " L" + (x.head[0] + 10) + " " + (x.head[1] + 8) }),
+      mk("circle", { class: "hg-dot", cx: 168, cy: 170, r: 5 }),
+      mk("text", { class: "hg-key", x: 172, y: 190, "text-anchor": "middle" }, "Rücken am Boden"),
+      mk("text", { class: "hg-txt", x: 22, y: x.knee ? 118 : 112 }, x.armLabel));
+    if (x.knee) svg.append(mk("text", { class: "hg-txt", x: x.knee[0] - 8, y: x.knee[1] - 10, "text-anchor": "end" }, "Knie ca. 90°"));
+    return h("div", { class: "hg-card" },
+      h("div", { class: "hg-head-row" }, h("b", null, x.n), h("span", { class: "hg-lvl", "aria-hidden": "true" }, "●".repeat(x.lvl) + "○".repeat(3 - x.lvl))),
+      svg, h("div", { class: "hg-t" }, x.t), h("div", { class: "spec" }, x.d));
+  });
+  return h("details", { class: "hg-box", open: open ? true : null },
+    h("summary", null, "Hollow Hold: Stufen ansehen"),
+    h("p", { class: "small muted", style: "margin:8px 0" }, "Seitenansicht, Kopf links. Der untere Rücken bleibt immer am Boden. Gehe erst eine Stufe weiter, wenn du 3 × 30 Sek. schaffst."),
+    figs);
 }
 
 function lineChart(points, unitLabel) {
@@ -504,6 +552,7 @@ function viewExercise(id) {
     h("h2", null, chartTitle),
     shown.length < rows.length ? h("p", { class: "small muted" }, "Das Diagramm zeigt nur Einträge mit der zuletzt verwendeten Einheit (" + unitLabel + "), damit nichts vermischt wird.") : null,
     h("div", { class: "card" }, points.length ? lineChart(points, unitLabel) : h("p", { class: "muted" }, "Das Diagramm erscheint nach dem ersten Speichern.")),
+    id === "hollow" ? [h("h2", null, "Stufen"), hollowGuide(true)] : null,
     h("h2", null, "Einträge"),
     h("div", { class: "card" }, table),
     rows.length ? h("h2", null, "Für den Claude-Chat") : null,
